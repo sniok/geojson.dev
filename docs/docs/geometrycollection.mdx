@@ -1,0 +1,12 @@
+---
+id: geometrycollection
+title: GeometryCollection
+---
+
+import CodeWithMap from "../src/components/CodeWithMap";
+
+A GeoJSON object with type `GeometryCollection` is a Geometry object. A GeometryCollection has a member with the name `geometries`. The value of `geometries` is an array. Each element of this array is a GeoJSON Geometry object.
+
+- you should avoid nested GeometryCollections
+- GeometryCollections composed of a single part should be avoided
+- a number of parts of a single type should be avoided when that single part or a single object of multipart typ (MultiPoint, MultiLineString, or MultiPolygon) could be used instead

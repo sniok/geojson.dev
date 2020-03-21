@@ -1,0 +1,56 @@
+---
+id: polygon
+title: Polygon
+---
+
+import CodeWithMap from "../src/components/CodeWithMap";
+
+To specify a constraint specific to Polygons, it is useful to introduce the concept of a **linear ring**:
+
+- A linear ring is a closed [LineString](#linestring) with **four or more positions**
+- The **first and last** positions are **equivalent**
+- A linear ring is the boundary of a surface
+- A linear ring must follow the right-hand rule. Exterior rings are counterclockwise, and holes are clockwise.
+
+For type `Polygon`, the `coordinates` member must be an array of linear ring coordinate arrays.
+
+No holes:
+
+<CodeWithMap
+  geojson={{
+    type: "Polygon",
+    coordinates: [
+      [
+        [100.0, 0.0],
+        [101.0, 0.0],
+        [101.0, 1.0],
+        [100.0, 1.0],
+        [100.0, 0.0]
+      ]
+    ]
+  }}
+/>
+
+With holes:
+
+<CodeWithMap
+  geojson={{
+    type: "Polygon",
+    coordinates: [
+      [
+        [100.0, 0.0],
+        [101.0, 0.0],
+        [101.0, 1.0],
+        [100.0, 1.0],
+        [100.0, 0.0]
+      ],
+      [
+        [100.8, 0.8],
+        [100.8, 0.2],
+        [100.2, 0.2],
+        [100.2, 0.8],
+        [100.8, 0.8]
+      ]
+    ]
+  }}
+/>

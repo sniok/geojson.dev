@@ -1,0 +1,62 @@
+---
+id: antimeridian
+title: 180th Meridian
+---
+
+import CodeWithMap from "../src/components/CodeWithMap";
+
+Point has `type` member `Point`, the `coordinates` member is a single position.
+
+In representing Features that cross the antimeridian, interoperability is improved by modifying their geometry.
+
+Any geometry that crosses the antimeridian should be represented by cutting it in two such that neither part's representation crosses the antimeridian.
+
+For example, a line extending from 45 degrees N, 170 degrees E across the antimeridian to 45 degrees N, 170 degrees W should be cut in two and represented as a MultiLineString:
+
+<CodeWithMap
+  height={350}
+  geojson={{
+    type: "MultiLineString",
+    coordinates: [
+      [
+        [170.0, 45.0],
+        [180.0, 45.0]
+      ],
+      [
+        [-180.0, 45.0],
+        [-170.0, 45.0]
+      ]
+    ]
+  }}
+/>
+
+A rectangle extending from 40 degrees N, 170 degrees E across the
+antimeridian to 50 degrees N, 170 degrees W should be cut in two and
+represented as a MultiPolygon.
+
+<CodeWithMap
+  height={350}
+  geojson={{
+    type: "MultiPolygon",
+    coordinates: [
+      [
+        [
+          [180.0, 40.0],
+          [180.0, 50.0],
+          [170.0, 50.0],
+          [170.0, 40.0],
+          [180.0, 40.0]
+        ]
+      ],
+      [
+        [
+          [-170.0, 40.0],
+          [-170.0, 50.0],
+          [-180.0, 50.0],
+          [-180.0, 40.0],
+          [-170.0, 40.0]
+        ]
+      ]
+    ]
+  }}
+/>

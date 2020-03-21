@@ -1,0 +1,18 @@
+---
+id: multipoint
+title: MultiPoint
+---
+
+import CodeWithMap from "../src/components/CodeWithMap";
+
+For type `MultiPoint`, the `coordinates` member is an array of positions.
+
+<CodeWithMap
+  geojson={{
+    type: "MultiPoint",
+    coordinates: [
+      [3.2, 4.5],
+      [12.3, 23.2]
+    ]
+  }}
+/>
