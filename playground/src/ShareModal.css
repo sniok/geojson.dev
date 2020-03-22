@@ -1,0 +1,21 @@
+.ShareModal {
+  position: fixed;
+  left: 10px;
+  z-index: 1;
+  top: 50px;
+  padding: 20px;
+  background: #fff;
+  border: 1px solid #ddd;
+}
+
+.ShareModal__url {
+  margin-top: 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ShareModal {
+    background-color: #1f2024;
+    color: #dcdcdc;
+    border: 1px solid #404040;
+  }
+}

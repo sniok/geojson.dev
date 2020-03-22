@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext, useMemo } from "react";
 import { featureEach } from "@turf/meta";
-import { featureCollection, Feature, FeatureCollection } from "@turf/helpers";
+import { featureCollection, FeatureCollection } from "@turf/helpers";
 import { useMap } from "./Mapbox";
 import { GeoJSONSource, Layer } from "mapbox-gl";
 import { addIds, removeFeature } from "./geojsonUtils";

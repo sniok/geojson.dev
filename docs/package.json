@@ -1,19 +1,19 @@
 {
-  "name": "docs",
+  "name": "@geojson-dev/docs",
   "version": "0.0.0",
   "private": true,
   "scripts": {
     "start": "docusaurus start",
     "build": "docusaurus build",
     "swizzle": "docusaurus swizzle",
-    "deploy": "docusaurus deploy"
+    "deploy": "now --prod"
   },
   "dependencies": {
-    "@docusaurus/core": "2.0.0-alpha.37",
-    "@docusaurus/preset-classic": "2.0.0-alpha.37",
+    "@docusaurus/core": "^2.0.0-alpha.48",
+    "@docusaurus/preset-classic": "^2.0.0-alpha.48",
     "classnames": "^2.2.6",
-    "react": "^16.12.0",
-    "react-dom": "^16.12.0",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
     "use-prefer-dark-mode": "^1.0.4"
   },
   "browserslist": {

@@ -2,44 +2,12 @@ import React, { useRef, useEffect, useState } from "react";
 import Editor, { monaco } from "@monaco-editor/react";
 import usePDM from "use-prefer-dark-mode";
 import { codeStatus } from "./useParsedGeojson";
-import schema from "./GeoJSON.json";
+import "./JsonEditor.css";
+import { rafThrottle } from "./rafThrottle";
 
 let inited: any = null;
-// monaco.init().then(x => {
-//   inited = x;
-// });
-
-monaco.init().then((monaco: any) => {
-  console.log(monaco, schema);
-  monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
-    // validate: true,
-    // schemas: [
-    //   {
-    //     filesMatch: ["*"],
-    //     schema
-    //   }
-    // ]
-    validate: true,
-    schemas: [
-      {
-        uri: "http://myserver/foo-schema.json", // id of the first schema
-        fileMatch: ["*"], // associate with our model
-        schema: {
-          type: "object",
-          properties: {
-            p1: {
-              enum: ["v1", "v2"]
-            }
-          }
-        }
-      },
-      {
-        uri: "http://myserver/kek.json",
-        fileMatch: ["*"],
-        schema
-      }
-    ]
-  });
+monaco.init().then(x => {
+  inited = x;
 });
 
 interface Props {
@@ -53,25 +21,24 @@ export function JsonEditor(props: Props) {
   const dark = usePDM();
 
   useEffect(() => {
-    return;
-    // if (!editor.current) {
-    //   return;
-    // }
-    // if (props.codeStatus.tag === "geojsonError") {
-    //   const newDecorations = props.codeStatus.errors.map(e => ({
-    //     range: new inited.Range(e.line + 1, 1, e.line + 1, Infinity),
-    //     options: {
-    //       isWholeLine: true,
-    //       className: "editor__error-line",
-    //       hoverMessage: { value: e.message }
-    //     }
-    //   }));
-    //   const ids = editor.current.deltaDecorations(decorations, newDecorations);
-    //   setDecorations(ids);
-    // } else {
-    //   editor.current.deltaDecorations(decorations, []);
-    //   setDecorations([]);
-    // }
+    if (!editor.current) {
+      return;
+    }
+    if (props.codeStatus.tag === "geojsonError") {
+      const newDecorations = props.codeStatus.errors.map(e => ({
+        range: new inited.Range(e.line + 1, 1, e.line + 1, Infinity),
+        options: {
+          isWholeLine: true,
+          className: "editor__error-line",
+          hoverMessage: { value: e.message }
+        }
+      }));
+      const ids = editor.current.deltaDecorations(decorations, newDecorations);
+      setDecorations(ids);
+    } else {
+      editor.current.deltaDecorations(decorations, []);
+      setDecorations([]);
+    }
   }, [props.codeStatus]);
 
   const handleChange = () => {
@@ -83,7 +50,7 @@ export function JsonEditor(props: Props) {
   const init = (_valueGetter: any, _editor: any) => {
     editor.current = _editor;
     _editor.updateOptions({
-      fontSize: 11,
+      fontSize: 12,
       minimap: {
         enabled: false
       }
@@ -93,8 +60,45 @@ export function JsonEditor(props: Props) {
     d();
   };
 
+  const [width, setWidth] = useState(350);
+  const isDragging = useRef(false);
+
+  useEffect(() => {
+    console.log(document.body.clientWidth);
+    const throttledResize = rafThrottle((e: MouseEvent) => {
+      const width = document.body.clientWidth - e.clientX;
+      setWidth(Math.max(width, 10));
+    });
+    const handleMove = (e: MouseEvent) => {
+      if (!isDragging.current) {
+        return;
+      }
+      throttledResize(e);
+    };
+    const handleStop = (e: MouseEvent) => {
+      if (isDragging.current) {
+        isDragging.current = false;
+        window.dispatchEvent(new Event("resize"));
+      }
+    };
+
+    document.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseup", handleStop);
+
+    return () => {
+      document.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseup", handleStop);
+    };
+  }, []);
+
+  const startDragging = (e: any) => {
+    e.preventDefault();
+    isDragging.current = true;
+  };
+
   return (
-    <div id="editor">
+    <div className="JsonEditor" style={{ width }}>
+      <div className="JsonEditor__resizer" onMouseDown={startDragging} />
       <Editor
         height="100vh - 30px"
         language="json"

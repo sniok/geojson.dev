@@ -1,0 +1,32 @@
+.StatusBar {
+  height: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 15px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #292a2d;
+  background: #f5f5f5;
+  border-top: 1px solid #ddd;
+}
+
+.StatusBar__info {
+  opacity: 0.5;
+}
+
+.App--minimal .StatusBar {
+  bottom: 0;
+  position: absolute;
+  background: transparent;
+  border: none;
+  opacity: 0.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .StatusBar {
+    background: #292a2d;
+    color: #eee;
+    border-top: 1px solid #404040;
+  }
+}

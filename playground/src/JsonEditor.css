@@ -1,0 +1,35 @@
+.JsonEditor {
+  position: relative;
+  background: #fff;
+  display: flex;
+  width: 350px;
+  height: 100%;
+  border-left: 1px solid #ddd;
+}
+
+.JsonEditor__resizer {
+  z-index: 1;
+  width: 4px;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  background: #ddd;
+  cursor: e-resize;
+  will-change: width;
+  transition-duration: 0.1s;
+}
+
+.JsonEditor__resizer:hover {
+  width: 10px;
+  transform: translateX(-3px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .JsonEditor {
+    border-left: 1px solid #404040;
+  }
+  .JsonEditor__resizer {
+    background: #404040;
+  }
+}

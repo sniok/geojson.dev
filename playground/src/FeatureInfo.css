@@ -1,0 +1,17 @@
+.FeatureInfo {
+  position: fixed;
+  top: 45px;
+  left: 0;
+  margin: 10px;
+  z-index: 1;
+  border: 1px solid #404040;
+  padding: 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .FeatureInfo {
+    background-color: #1f2024;
+    color: #dcdcdc;
+    border: 1px solid #404040;
+  }
+}

@@ -1,0 +1,42 @@
+service: share
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  region: eu-west-1
+  iamRoleStatements:
+    - Effect: "Allow"
+      Action:
+        - "s3:ListBucket"
+      Resource:
+        - "arn:aws:s3:::geojson-dev-share/*"
+    - Effect: "Allow"
+      Action:
+        - "s3:PutObject"
+      Resource:
+        - "arn:aws:s3:::geojson-dev-share/*"
+
+# you can define service wide environment variables here
+#  environment:
+#    variable1: value1
+
+functions:
+  share:
+    handler: handler.share
+    events:
+      - http:
+          path: share
+          method: post
+          cors: true
+
+# you can add CloudFormation resource templates here
+resources:
+  Resources:
+    shareStorage:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: geojson-dev-share
+#  Outputs:
+#     NewOutput:
+#       Description: "Description for the output"
+#       Value: "Some output value"

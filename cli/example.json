@@ -1,5 +1,4 @@
 {
-  "$schema": "https://geojson.org/schema/GeoJSON.json",
   "type": "FeatureCollection",
   "features": [
     {

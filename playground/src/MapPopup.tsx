@@ -6,8 +6,9 @@ import { useMap } from "./Mapbox";
 interface Props {
   lngLat: { lng: number; lat: number };
   children: ReactNode;
+  onClose: () => any;
 }
-function MapPopup({ lngLat, children }: Props) {
+function MapPopup({ lngLat, children, onClose }: Props) {
   const [popup, setPopup] = useState<mapboxgl.Popup>();
   const map = useMap();
 
@@ -18,7 +19,14 @@ function MapPopup({ lngLat, children }: Props) {
       .addTo(map);
     setPopup(p);
 
+    const handleClose = () => {
+      onClose();
+    };
+
+    p.on("close", handleClose);
+
     return () => {
+      p.off("close", handleClose);
       p.remove();
     };
   }, []);

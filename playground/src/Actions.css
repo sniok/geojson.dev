@@ -1,0 +1,40 @@
+.Actions {
+  position: fixed;
+  top: 0;
+  left: 0;
+  margin: 10px;
+  z-index: 1;
+  display: flex;
+  background: #fff;
+  border: 1px solid #ddd;
+}
+
+.Actions__action {
+  all: unset;
+  padding: 8px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.Actions__action:hover {
+  background: #f0f0f0;
+}
+
+.Actions__action:active {
+  background: #ddd;
+}
+
+@media (prefers-color-scheme: dark) {
+  .Actions {
+    background-color: #1f2024;
+    color: #dcdcdc;
+    border: 1px solid #404040;
+  }
+  .Actions__action:hover {
+    background: #444;
+  }
+
+  .Actions__action:active {
+    background: #666;
+  }
+}

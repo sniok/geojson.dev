@@ -18,6 +18,8 @@ import { FeatureCollection, Feature, bbox, AllGeoJSON } from "@turf/turf";
 import { useParsedGeojson } from "./useParsedGeojson";
 import Editor from "./Editor";
 import Button from "./Button";
+import { FeatureInfo } from "./FeatureInfo";
+import { Actions } from "./Actions";
 
 /*
 
@@ -74,14 +76,23 @@ const App: React.FC = () => {
   }, [code]);
 
   useEffect(() => {
+    window.dispatchEvent(new Event("resize"));
+  }, [hiddenEditor]);
+
+  useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
 
-    const path = urlParams.get("p");
+    const path = urlParams.get("url");
     if (path) {
       fetchGeojson(path);
     }
 
-    const json = urlParams.get("j");
+    const share = urlParams.get("share");
+    if (share) {
+      fetchGeojson(`https://cdn.dubenko.dev/${share}.json`);
+    }
+
+    const json = urlParams.get("json");
     if (json) {
       try {
         const geojson = JSON.parse(decodeURIComponent(json));
@@ -92,13 +103,13 @@ const App: React.FC = () => {
       }
     }
 
-    const minimal = urlParams.get("m");
+    const minimal = urlParams.get("minimal");
     if (minimal) {
       setMinimal(true);
       setTimeout(() => window.dispatchEvent(new Event("resize")), 0);
     }
 
-    const hideEditor = urlParams.get("he");
+    const hideEditor = urlParams.get("hideEditor");
     if (hideEditor) {
       setHiddenEditor(true);
     }
@@ -150,6 +161,7 @@ const App: React.FC = () => {
           )}
           {editing === undefined && selection && (
             <MapPopup
+              onClose={() => setSelection(undefined)}
               lngLat={selection.lngLat}
               key={JSON.stringify(selection.lngLat)}
             >
@@ -180,6 +192,8 @@ const App: React.FC = () => {
             {hiddenEditor ? <ChevronLeft /> : <ChevronRight />}
           </div>
         </Mapbox>
+        {!minimal && <Actions parsed={parsed} onGeojson={setCode} />}
+        {selection && <FeatureInfo feature={parsed.features[selection.id]} />}
         {!hiddenEditor && (
           <JsonEditor onChange={setCode} value={code} codeStatus={codeStatus} />
         )}

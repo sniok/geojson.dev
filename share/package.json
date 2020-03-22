@@ -1,0 +1,14 @@
+{
+  "name": "@geojson-dev/share",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "dependencies": {
+    "@codenamize/codenamize": "^1.1.1",
+    "@mapbox/geojsonhint": "^3.0.0",
+    "aws-sdk": "^2.643.0"
+  },
+  "scripts": {
+    "deploy": "serverless deploy"
+  }
+}
