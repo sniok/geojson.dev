@@ -11,12 +11,12 @@ const MAX_SIZE = 10 * 1000000;
 
 const playgroundUrl = `https://playground.geojson.dev`;
 
-const makeUrl = (path, params) => {
+const makeUrl = path => {
   let query = ``;
-  if (!params.editor) {
+  if (program.hideEditor) {
     query += "&hideEditor=1";
   }
-  if (params.minimal) {
+  if (program.minimal) {
     query += "&minimal=1";
   }
   return `${playgroundUrl}${path}${query}`;
@@ -57,7 +57,6 @@ const open = async (file, params) => {
   });
 
   app.listen(port, () =>
-    // console.log(`${playgroundUrl}/?url=http://localhost:${port}/geojson`)
     console.log(makeUrl(`/url?=http://localhost:${port}/geojson`, params))
   );
 };
@@ -104,7 +103,7 @@ const openUrl = async (url, params) => {
 
 program
   .option(
-    "-n, --no-editor",
+    "-h, --hide-editor",
     "hide editor, useful for big files or just presentation"
   )
   .option("-m, --minimal", "use minimal interface");
@@ -121,11 +120,6 @@ program
 
 program
   .command("share <file>")
-  // .option(
-  //   "-n, --no-editor",
-  //   "hide editor, useful for big files or just presentation"
-  // )
-  // .option("-m, --minimal", "use minimal interface")
   .description("share a GeoJSON file")
   .action(share);
 
