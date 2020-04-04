@@ -37,7 +37,10 @@ module.exports.share = async event => {
     return BadRequest("Not json");
   }
 
-  const errors = geojsonhint.hint(JSON.parse(event.body));
+  const errors = geojsonhint
+    .hint(JSON.parse(event.body))
+    .filter(it => !it.message.includes("right-hand"));
+
   if (errors.length) {
     return BadRequest("invalid geojson " + JSON.stringify(errors));
   }

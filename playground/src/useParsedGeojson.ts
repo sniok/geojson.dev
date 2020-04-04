@@ -24,7 +24,9 @@ export const useParsedGeojson = (
 
       if (errors.length) {
         // Create more detailed erros
-        const detailedErrors = geojsonhint.hint(code);
+        const detailedErrors = geojsonhint
+          .hint(code)
+          .filter((it: any) => !it.message.includes("right-hand"));
         setCodeStatus({ tag: "geojsonError", errors: detailedErrors });
         return;
       }

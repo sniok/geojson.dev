@@ -8,6 +8,10 @@
   border: 1px solid #ddd;
 }
 
+.ShareModal__input {
+  margin: 5px 0;
+}
+
 .ShareModal__url {
   margin-top: 20px;
 }

@@ -39,6 +39,7 @@ const parseGeojsonFile = async file => {
 };
 
 const open = async (file, params) => {
+  console.log("Reading file...");
   try {
     await parseGeojsonFile(file);
   } catch (e) {
@@ -56,9 +57,10 @@ const open = async (file, params) => {
     res.sendFile(path.resolve(file));
   });
 
-  app.listen(port, () =>
-    console.log(makeUrl(`/url?=http://localhost:${port}/geojson`, params))
-  );
+  app.listen(port, () => {
+    console.log("Ready, open following URL:");
+    console.log(makeUrl(`/?url=http://localhost:${port}/geojson`, params));
+  });
 };
 
 const share = async (file, params) => {
@@ -87,23 +89,16 @@ const share = async (file, params) => {
 
     console.log(`
       Shared file
-      ${makeUrl(`/?share=${response.name}`, args)}
+      ${makeUrl(`/?share=${response.name}`, params)}
       `);
   } catch (e) {
     console.log(e);
   }
 };
 
-const openUrl = async (url, params) => {
-  console.log(`
-      Open this link
-      ${makeUrl(`/?url=${url}`, params)}
-      `);
-};
-
 program
   .option(
-    "-h, --hide-editor",
+    "-he, --hide-editor",
     "hide editor, useful for big files or just presentation"
   )
   .option("-m, --minimal", "use minimal interface");
@@ -112,11 +107,6 @@ program
   .command("open <file>")
   .description("open local GeoJSON file in a playground")
   .action(open);
-
-program
-  .command("open-url <url>")
-  .description("open from URL")
-  .action(openUrl);
 
 program
   .command("share <file>")

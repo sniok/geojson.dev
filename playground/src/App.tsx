@@ -20,6 +20,7 @@ import Editor from "./Editor";
 import Button from "./Button";
 import { FeatureInfo } from "./FeatureInfo";
 import { Actions } from "./Actions";
+import { DragAndDrop } from "./DragAndDrop";
 
 /*
 
@@ -150,6 +151,7 @@ const App: React.FC = () => {
 
   return (
     <div className={cx("App", { "App--minimal": minimal })}>
+      <DragAndDrop onFileContent={setCode} />
       <div className={"workspace"}>
         <Mapbox mapRef={mapRef}>
           {!minimal && editing !== undefined && (
@@ -159,7 +161,7 @@ const App: React.FC = () => {
               onSave={handleSave}
             />
           )}
-          {editing === undefined && selection && (
+          {editing === undefined && selection && !hiddenEditor && (
             <MapPopup
               onClose={() => setSelection(undefined)}
               lngLat={selection.lngLat}

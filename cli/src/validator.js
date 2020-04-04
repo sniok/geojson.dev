@@ -19,6 +19,7 @@ const validate = geojsonString => {
   if (errors.length) {
     const detailedErrors = geojsonhint
       .hint(geojsonString)
+      .filter(it => !it.message.includes("right-hand"))
       .map(
         err => `GeoJSON validation error at line ${err.line}: ${err.message}`
       );
