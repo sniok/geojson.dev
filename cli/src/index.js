@@ -11,7 +11,7 @@ const MAX_SIZE = 10 * 1000000;
 
 const playgroundUrl = `https://playground.geojson.dev`;
 
-const makeUrl = path => {
+const makeUrl = (path) => {
   let query = ``;
   if (program.hideEditor) {
     query += "&hideEditor=1";
@@ -22,7 +22,7 @@ const makeUrl = path => {
   return `${playgroundUrl}${path}${query}`;
 };
 
-const parseGeojsonFile = async file => {
+const parseGeojsonFile = async (file) => {
   const { size } = fs.stat(file);
   if (size > MAX_SIZE) {
     throw new Error("File is too large. Max size is " + MAX_SIZE + " bytes");
@@ -81,11 +81,11 @@ const share = async (file, params) => {
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: geojson
+        body: geojson,
       }
-    ).then(x => x.json());
+    ).then((x) => x.json());
 
     console.log(`
       Shared file

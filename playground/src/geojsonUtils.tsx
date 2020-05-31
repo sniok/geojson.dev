@@ -5,7 +5,7 @@ import turf, {
   Feature,
   Geometry,
   feature,
-  featureEach
+  featureEach,
 } from "@turf/turf";
 
 const isCollection = (geojson: GeoJSONObject): geojson is FeatureCollection =>
@@ -20,7 +20,7 @@ const isGeometry = (geojson: GeoJSONObject): geojson is Geometry =>
     "MultiLineString",
     "Polygon",
     "MultiPolygon",
-    "GeometryCollection"
+    "GeometryCollection",
   ].includes(geojson.type);
 
 export const toCollection = (geojson: GeoJSONObject): FeatureCollection => {
@@ -39,7 +39,7 @@ export const toCollection = (geojson: GeoJSONObject): FeatureCollection => {
 export const addIds = (collection: FeatureCollection): FeatureCollection => {
   return {
     ...collection,
-    features: collection.features.map((x, i) => ({ ...x, id: i }))
+    features: collection.features.map((x, i) => ({ ...x, id: i })),
   };
 };
 
@@ -55,7 +55,7 @@ export const removeFeature = (
 export const addFeature = (geojson: GeoJSONObject, feature: Feature) => {
   const merged = featureCollection([
     ...toCollection(geojson).features,
-    feature
+    feature,
   ]);
   return merged;
 };

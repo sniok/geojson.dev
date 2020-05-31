@@ -22,20 +22,9 @@ import { FeatureInfo } from "./FeatureInfo";
 import { Actions } from "./Actions";
 import { DragAndDrop } from "./DragAndDrop";
 
-/*
-
-Todo:
-
-hide code for long files
-share?
-icons 
-zoom if its outside viewport
-
-*/
-
 const example: FeatureCollection = {
   type: "FeatureCollection",
-  features: []
+  features: [],
 };
 
 const App: React.FC = () => {
@@ -57,7 +46,7 @@ const App: React.FC = () => {
   };
 
   const fetchGeojson = async (url: string) => {
-    const response = await fetch(url).then(x => x.json());
+    const response = await fetch(url).then((x) => x.json());
     setGeojson(response);
   };
 
@@ -68,7 +57,7 @@ const App: React.FC = () => {
     }
     mapRef.current.fitBounds(bbox(geojson) as any, {
       padding: 50,
-      animate: false
+      animate: false,
     });
   };
 
@@ -145,9 +134,10 @@ const App: React.FC = () => {
     setEditing(undefined);
   };
 
-  const handleNewFeature = useCallback(f => setGeojson(addFeature(parsed, f)), [
-    parsed
-  ]);
+  const handleNewFeature = useCallback(
+    (f) => setGeojson(addFeature(parsed, f)),
+    [parsed]
+  );
 
   return (
     <div className={cx("App", { "App--minimal": minimal })}>
@@ -187,7 +177,7 @@ const App: React.FC = () => {
           <div
             className="EditorToggle"
             onClick={() => {
-              setHiddenEditor(x => !x);
+              setHiddenEditor((x) => !x);
               setTimeout(() => window.dispatchEvent(new Event("resize")), 0);
             }}
           >

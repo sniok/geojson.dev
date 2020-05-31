@@ -9,7 +9,7 @@ function StatusBar(props: Props) {
   const status: any = {
     ok: "Ok",
     jsonError: "Out of sync",
-    geojsonError: "Out of sync"
+    geojsonError: "Out of sync",
   }[props.codeStatus.tag];
   return (
     <div className="StatusBar">

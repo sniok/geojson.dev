@@ -6,7 +6,7 @@ import "./JsonEditor.css";
 import { rafThrottle } from "./rafThrottle";
 
 let inited: any = null;
-monaco.init().then(x => {
+monaco.init().then((x) => {
   inited = x;
 });
 
@@ -25,13 +25,13 @@ export function JsonEditor(props: Props) {
       return;
     }
     if (props.codeStatus.tag === "geojsonError") {
-      const newDecorations = props.codeStatus.errors.map(e => ({
+      const newDecorations = props.codeStatus.errors.map((e) => ({
         range: new inited.Range(e.line + 1, 1, e.line + 1, Infinity),
         options: {
           isWholeLine: true,
           className: "editor__error-line",
-          hoverMessage: { value: e.message }
-        }
+          hoverMessage: { value: e.message },
+        },
       }));
       const ids = editor.current.deltaDecorations(decorations, newDecorations);
       setDecorations(ids);
@@ -52,8 +52,8 @@ export function JsonEditor(props: Props) {
     _editor.updateOptions({
       fontSize: 12,
       minimap: {
-        enabled: false
-      }
+        enabled: false,
+      },
     });
     _editor.onDidChangeModelContent(handleChange);
     const d = async () => {};

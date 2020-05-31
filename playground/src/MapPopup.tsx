@@ -13,10 +13,7 @@ function MapPopup({ lngLat, children, onClose }: Props) {
   const map = useMap();
 
   useEffect(() => {
-    const p = new mapboxgl.Popup()
-      .setLngLat(lngLat)
-      .setHTML("")
-      .addTo(map);
+    const p = new mapboxgl.Popup().setLngLat(lngLat).setHTML("").addTo(map);
     setPopup(p);
 
     const handleClose = () => {

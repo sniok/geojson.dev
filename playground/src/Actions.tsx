@@ -6,7 +6,7 @@ import { ShareModal } from "./ShareModal";
 
 export function Actions({
   parsed,
-  onGeojson
+  onGeojson,
 }: {
   parsed: any;
   onGeojson: (p: any) => void;
@@ -17,7 +17,7 @@ export function Actions({
     input.click();
     input.addEventListener(
       "change",
-      async e => {
+      async (e) => {
         if (input.files === null) {
           return;
         }
@@ -40,7 +40,7 @@ export function Actions({
 
   const onSave = () => {
     const blob = new Blob([JSON.stringify(parsed, null, 2)], {
-      type: "application/json;charset=utf-8"
+      type: "application/json;charset=utf-8",
     });
     saveAs(blob, "geometry.json");
   };
@@ -57,7 +57,7 @@ export function Actions({
       </button>
       <button
         className="Actions__action"
-        onClick={() => setShareModal(x => !x)}
+        onClick={() => setShareModal((x) => !x)}
       >
         Share
       </button>

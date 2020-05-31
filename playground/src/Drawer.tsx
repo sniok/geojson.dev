@@ -32,8 +32,8 @@ function Drawer(props: Props) {
         polygon: true,
         trash: false,
         combine_features: false,
-        uncombine_features: false
-      }
+        uncombine_features: false,
+      },
     });
 
     map.addControl(Draw, "top-right");

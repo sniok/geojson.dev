@@ -38,8 +38,8 @@ function Editor(props: Props) {
         polygon: false,
         trash: false,
         combine_features: false,
-        uncombine_features: false
-      }
+        uncombine_features: false,
+      },
     });
 
     map.addControl(Draw, "top-right");

@@ -15,11 +15,11 @@ export function ShareModal({ parsed }: { parsed: any }) {
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(parsed)
+        body: JSON.stringify(parsed),
       }
-    ).then(x => x.json());
+    ).then((x) => x.json());
     const params = new URLSearchParams();
     params.set("share", name);
     if (hideEditor) {
@@ -39,7 +39,7 @@ export function ShareModal({ parsed }: { parsed: any }) {
         <input
           type="checkbox"
           checked={hideEditor}
-          onChange={() => setHideEditor(x => !x)}
+          onChange={() => setHideEditor((x) => !x)}
           id="hideEditor"
         />
         <label htmlFor="hideEditor">Hide editor</label>
@@ -49,7 +49,7 @@ export function ShareModal({ parsed }: { parsed: any }) {
           id="minimal"
           type="checkbox"
           checked={minimal}
-          onChange={() => setMinimal(x => !x)}
+          onChange={() => setMinimal((x) => !x)}
         />
         <label htmlFor="minimal">Minimal UI</label>
       </div>

@@ -56,7 +56,7 @@ function Mapbox({ children, mapRef }: any) {
         : "https://api.maptiler.com/maps/basic/style.json?key=RaJjJYR0TdIqppDZ4yb1",
       center: [0, 0],
       zoom: 1,
-      container: "mapbox"
+      container: "mapbox",
     });
     m.on("load", () => {
       setMap(m);

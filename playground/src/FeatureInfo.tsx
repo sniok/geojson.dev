@@ -29,7 +29,7 @@ export function FeatureInfo({ feature }: { feature: Feature }) {
           base0C: "#6c71c4",
           base0D: "#aeaeae",
           base0E: "#dcdcdc",
-          base0F: "#268bd2"
+          base0F: "#268bd2",
         }}
         sortKeys={true}
         collapseStringsAfterLength={50}

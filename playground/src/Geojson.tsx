@@ -23,7 +23,7 @@ function Source({ data, children }: { data: any; children: any }) {
     if (!source) {
       map.addSource(id, {
         type: "geojson",
-        data: { type: "FeatureCollection", features: [] }
+        data: { type: "FeatureCollection", features: [] },
       });
       source = map.getSource(id) as GeoJSONSource;
     }
@@ -41,7 +41,7 @@ function Source({ data, children }: { data: any; children: any }) {
 const MapLayer = React.memo(
   ({
     layer,
-    onClick
+    onClick,
   }: {
     layer: Omit<mapboxgl.Layer, "source">;
     onClick?: any;
@@ -51,7 +51,13 @@ const MapLayer = React.memo(
     useEffect(() => {
       map.addLayer({
         ...layer,
-        source: sourceId
+        source: sourceId,
+      });
+      map.addLayer({
+        ...layer,
+        id: layer.id + "-tiles",
+        source: "tiles",
+        "source-layer": "geojsonLayer",
       });
 
       const hoverOn = () => (map.getCanvas().style.cursor = "pointer");
@@ -59,6 +65,7 @@ const MapLayer = React.memo(
 
       if (onClick) {
         map.on("click", layer.id, onClick);
+        map.on("click", layer.id + "-tiles", onClick);
         map.on("mouseenter", layer.id, hoverOn);
         map.on("mouseleave", layer.id, hoverOff);
       }
@@ -80,7 +87,7 @@ const bucketFeatures = (geojson: any): any => {
   const lines: any = [];
   const fill: any = [];
   const points: any = [];
-  featureEach(geojson, f => {
+  featureEach(geojson, (f) => {
     switch ((f.geometry as any).type) {
       case "Point":
       case "MultiPoint":
@@ -100,14 +107,14 @@ const bucketFeatures = (geojson: any): any => {
   return {
     lines: featureCollection(lines),
     fill: featureCollection(fill),
-    points: featureCollection(points)
+    points: featureCollection(points),
   };
 };
 
 export function Geojson({
   data,
   onClick,
-  hideIds
+  hideIds,
 }: {
   data: FeatureCollection;
   onClick?: (e: ClickEvent) => void;

@@ -13,7 +13,7 @@ export const useParsedGeojson = (
 ): { parsed: FeatureCollection; codeStatus: codeStatus } => {
   const [parsed, setParsed] = useState<FeatureCollection>({
     type: "FeatureCollection",
-    features: []
+    features: [],
   });
   const [codeStatus, setCodeStatus] = useState<codeStatus>({ tag: "ok" });
 
