@@ -9,7 +9,8 @@ import { Geojson, ClickEvent } from "./Geojson";
 import "./App.css";
 import cx from "classnames";
 import StatusBar from "./StatusBar";
-import { useDebounce } from "./useDebounce";
+// @ts-ignore
+import { useThrottle } from "use-throttle";
 import Drawer from "./Drawer";
 import MapPopup from "./MapPopup";
 import { featureCollection, Feature, bbox, AllGeoJSON, Id } from "@turf/turf";
@@ -36,7 +37,7 @@ const App: React.FC = () => {
 
   const [code, setCode] = useState(DEFAULT_CODE);
 
-  const debouncedCode = useDebounce(code, 100);
+  const debouncedCode = useThrottle(code, 100);
   const { parsed, codeStatus, idMap } = useParsedGeojson(debouncedCode);
 
   const setGeojson = (geojson: JSONLikeObject) => {
