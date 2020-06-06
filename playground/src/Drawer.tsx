@@ -1,12 +1,14 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import geojsonhint from "@mapbox/geojsonhint";
+// @ts-ignore
+import precision from "geojson-precision";
 import { AllGeoJSON } from "@turf/turf";
 import rewind from "@turf/rewind";
 import { useMap } from "./Mapbox";
 import MapboxDraw from "@mapbox/mapbox-gl-draw";
 import "@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css";
 
-function checkWindiwg(geojson: AllGeoJSON) {
+function checkWinding(geojson: AllGeoJSON) {
   if (geojsonhint.hint(geojson).length) {
     return rewind(geojson);
   }
@@ -18,9 +20,6 @@ interface Props {
 }
 function Drawer(props: Props) {
   const map = useMap();
-
-  const testRef = useRef<any>();
-  testRef.current = props.onNewFeature;
 
   const [draw, setDraw] = useState<any>(undefined);
 
@@ -52,8 +51,11 @@ function Drawer(props: Props) {
     const updateArea = (e: any) => {
       const [f] = e.features;
       delete f.id;
-      const checked = checkWindiwg(f);
-      testRef.current(checked);
+      const checked = checkWinding(f);
+
+      // Remove any more than 9 decimal points of precision.
+      // GeoJSON recommends no more than 6, however 9 is standard for GPS and professional GIS work.
+      props.onNewFeature(precision.parse(checked, 9));
       draw.deleteAll();
     };
 
