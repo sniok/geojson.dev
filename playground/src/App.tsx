@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import Edit from "react-feather/dist/icons/edit";
 import Trash from "react-feather/dist/icons/trash";
 import ChevronLeft from "react-feather/dist/icons/chevron-left";
@@ -195,6 +201,26 @@ const App: React.FC = () => {
     [parsed]
   );
 
+  const featureInfoValue: any = useMemo(() => {
+    if (!selection) {
+      return null;
+    }
+
+    const value = {
+      ...parsed.features[selection.id],
+    };
+
+    // Needed for the JSON editor.
+    const idMapping = getIDMapping(parsed.features[selection.id]);
+    if (idMapping != null) {
+      value.id = idMapping;
+    } else {
+      delete value.id;
+    }
+
+    return value;
+  }, [selection]);
+
   return (
     <div className={cx("App", { "App--minimal": minimal })}>
       <DragAndDrop onFileContent={setCode} />
@@ -241,7 +267,7 @@ const App: React.FC = () => {
           </div>
         </Mapbox>
         {!minimal && <Actions parsed={parsed} onGeojson={setCode} />}
-        {selection && <FeatureInfo feature={parsed.features[selection.id]} />}
+        {selection && <FeatureInfo feature={featureInfoValue} />}
         {!hiddenEditor && (
           <JsonEditor onChange={setCode} value={code} codeStatus={codeStatus} />
         )}
