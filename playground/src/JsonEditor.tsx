@@ -6,6 +6,14 @@ import "./JsonEditor.css";
 import { rafThrottle } from "./rafThrottle";
 import { Nullable } from "./types";
 
+(monaco as any).config({
+  paths: {
+    vs: "vs",
+  },
+});
+(monaco as any).__config.urls.monacoBase = "vs";
+(monaco as any).__config.urls.monacoLoader = "vs/loader.js";
+
 let inited: any = null;
 monaco.init().then((monaco) => {
   console.log("Monaco loaded");
