@@ -30,7 +30,22 @@ export const useParsedGeojson = (
         // Create more detailed erros
         const detailedErrors = geojsonhint
           .hint(code)
-          .filter((it: any) => !it.message.includes("right-hand"));
+          .filter((it: any) => !it.message.includes("right-hand"))
+          .map((e: any) => {
+            const message: string = e.message;
+
+            if (!message || !message.length) {
+              return e
+            }
+
+            return {
+              ...e,
+              // Convert from geojsonhint style to proper English.
+              //
+              // Example: this is an error --> This is an error.
+              message: message.charAt(0).toUpperCase() + message.substring(1) + '.'
+            }
+          });
         setCodeStatus({ tag: "geojsonError", errors: detailedErrors });
         return;
       }

@@ -1,23 +1,42 @@
+/// <reference path="./monaco.d.ts" />
+
 import React, { useRef, useEffect, useState } from "react";
-import { monaco, ControlledEditor } from "@monaco-editor/react";
+import { monaco as MonacoLoader, ControlledEditor } from "@monaco-editor/react";
 import usePDM from "use-prefer-dark-mode";
 import { codeStatus } from "./useParsedGeojson";
 import "./JsonEditor.css";
 import { rafThrottle } from "./rafThrottle";
 import { Nullable } from "./types";
 
-(monaco as any).config({
+type Decoration = monaco.editor.IModelDeltaDecoration;
+
+// Force Monaco Editor to use our local version.
+(MonacoLoader as any).config({
   paths: {
     vs: "vs",
   },
 });
-(monaco as any).__config.urls.monacoBase = "vs";
-(monaco as any).__config.urls.monacoLoader = "vs/loader.js";
+(MonacoLoader as any).__config.urls.monacoBase = "vs";
+(MonacoLoader as any).__config.urls.monacoLoader = "vs/loader.js";
 
-let inited: any = null;
-monaco.init().then((monaco) => {
+let inited: typeof monaco;
+MonacoLoader.init().then(async (monacoObj: typeof monaco) => {
   console.log("Monaco loaded");
-  inited = monaco;
+  inited = monacoObj;
+
+  const { default: schema } = await import("./schema.json");
+
+  // http://json.schemastore.org/geojson
+  monacoObj.languages.json.jsonDefaults.setDiagnosticsOptions({
+    validate: false,
+    schemas: [
+      {
+        uri: "geojson-schema.json",
+        fileMatch: [""],
+        schema,
+      },
+    ],
+  });
 });
 
 interface Props {
@@ -28,28 +47,36 @@ interface Props {
 
 export function JsonEditor(props: Props) {
   const [decorations, setDecorations] = useState<any[]>([]);
-  const editor = useRef<any>();
+  const editor = useRef<monaco.editor.ICodeEditor>();
   const dark = usePDM();
 
+  // https://github.com/microsoft/monaco-css/blob/master/src/languageFeatures.ts
   useEffect(() => {
-    if (!editor.current) {
+    if (inited == null || !editor.current) {
       return;
     }
+
     if (props.codeStatus.tag === "geojsonError") {
-      const newDecorations = props.codeStatus.errors.map((e) => ({
-        range: new inited.Range(e.line + 1, 1, e.line + 1, Infinity),
-        options: {
-          isWholeLine: true,
-          className: "editor__error-line",
-          hoverMessage: { value: e.message },
-        },
-      }));
+      const newDecorations: Decoration[] = props.codeStatus.errors.map(
+        (e) =>
+          ({
+            range: new inited.Range(e.line + 1, 1, e.line + 1, Infinity),
+            options: {
+              isWholeLine: true,
+              className: "editor__error-line",
+              hoverMessage: [{ value: "**GeoJSON Error**" }, { value: e.message }],
+            },
+          } as Decoration)
+      );
+
       const ids = editor.current.deltaDecorations(decorations, newDecorations);
       setDecorations(ids);
     } else {
       editor.current.deltaDecorations(decorations, []);
       setDecorations([]);
     }
+
+    return () => {};
   }, [props.codeStatus]);
 
   const handleChange = (event: any, value?: string): void => {
