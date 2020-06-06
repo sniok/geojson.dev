@@ -35,27 +35,3 @@ export const toCollection = (geojson: GeoJSONObject): FeatureCollection => {
   }
   throw new Error("Unknown type " + geojson.type);
 };
-
-export const addIds = (collection: FeatureCollection): FeatureCollection => {
-  return {
-    ...collection,
-    features: collection.features.map((x, i) => ({ ...x, id: i })),
-  };
-};
-
-export const removeFeature = (
-  geojson: FeatureCollection,
-  id: number
-): FeatureCollection => {
-  const newFeatures = geojson.features.filter((_, i) => i !== id);
-
-  return { ...geojson, features: newFeatures };
-};
-
-export const addFeature = (geojson: GeoJSONObject, feature: Feature) => {
-  const merged = featureCollection([
-    ...toCollection(geojson).features,
-    feature,
-  ]);
-  return merged;
-};

@@ -13,6 +13,7 @@ export function FeatureInfo({ feature }: { feature: Feature }) {
         collapsed={2}
         iconStyle="square"
         enableClipboard={false}
+        name={false}
         theme={{
           base00: "rgba(0, 0, 0, 0)",
           base01: "rgb(245, 245, 245)",

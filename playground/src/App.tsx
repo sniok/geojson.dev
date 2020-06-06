@@ -7,24 +7,23 @@ import JsonEditor from "./JsonEditor";
 import Mapbox from "./Mapbox";
 import { Geojson, ClickEvent } from "./Geojson";
 import "./App.css";
-// @ts-ignore
 import cx from "classnames";
 import StatusBar from "./StatusBar";
 import { useDebounce } from "./useDebounce";
 import Drawer from "./Drawer";
-import { addFeature, removeFeature } from "./geojsonUtils";
 import MapPopup from "./MapPopup";
-import { featureCollection, FeatureCollection, Feature, bbox, AllGeoJSON } from "@turf/turf";
+import { featureCollection, Feature, bbox, AllGeoJSON, Id } from "@turf/turf";
 import { useParsedGeojson } from "./useParsedGeojson";
 import Editor from "./Editor";
 import Button from "./Button";
 import { FeatureInfo } from "./FeatureInfo";
 import { Actions } from "./Actions";
 import { DragAndDrop } from "./DragAndDrop";
+import { Nullable } from "./types";
 
-type JSONLikeObject = { [key: string]: any }
+type JSONLikeObject = { [key: string]: any };
 
-const DEFAULT_CODE = JSON.stringify(featureCollection([]), null, 2)
+const DEFAULT_CODE = JSON.stringify(featureCollection([]), null, 2);
 
 const App: React.FC = () => {
   const mapRef = useRef<mapboxgl.Map>();
@@ -38,7 +37,7 @@ const App: React.FC = () => {
   const [code, setCode] = useState(DEFAULT_CODE);
 
   const debouncedCode = useDebounce(code, 100);
-  const { parsed, codeStatus } = useParsedGeojson(debouncedCode);
+  const { parsed, codeStatus, idMap } = useParsedGeojson(debouncedCode);
 
   const setGeojson = (geojson: JSONLikeObject) => {
     setCode(JSON.stringify(geojson, null, 2));
@@ -48,8 +47,8 @@ const App: React.FC = () => {
     const response = await fetch(url).then((x) => x.text());
 
     try {
-      JSON.parse(response)
-      setCode(response)
+      JSON.parse(response);
+      setCode(response);
     } catch (e) {
       console.error("Invalid JSON", e);
     }
@@ -110,30 +109,54 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const onFeatureClick = (e: ClickEvent) => {
-    setSelection(e);
-  };
-
-  const handleDelete = () => {
-    if (selection) {
-      setGeojson(removeFeature(parsed, selection.id));
-    }
-  };
+  const onFeatureClick = useCallback(
+    (e: ClickEvent) => {
+      setSelection(e);
+    },
+    [setSelection]
+  );
 
   const handleEdit = (id: number) => {
     setEditing(id);
   };
 
-  const handleSave = (f: Feature) => {
+  const getIDMapping = (f: Feature): Nullable<Id> => {
+    return typeof f.id === "number" && idMap && idMap.has(f.id)
+      ? idMap.get(f.id)
+      : undefined;
+  };
+
+  const cloneFeaturesForText = (
+    editing: number = -1,
+    editingFeature?: Feature
+  ) => {
+    // TODO: In the future, could benchmark how much faster it is using string-based JSON APIs
+    // from VSCode source (under MIT license).
+    return parsed.features.map((parsedFeature, i) => {
+      if (i === editing && editingFeature) {
+        return {
+          ...editingFeature,
+          id: getIDMapping(editingFeature),
+        };
+      }
+
+      return {
+        ...parsedFeature,
+        id: getIDMapping(parsedFeature),
+      };
+    });
+  };
+
+  const handleSave = (editingFeature: Feature) => {
     if (editing === undefined) {
       return;
     }
 
-    const newFeatures = parsed.features.slice();
-    newFeatures[editing] = f;
-  
-    const newCollection = { ...parsed, features: newFeatures };
-  
+    const newCollection = {
+      ...parsed,
+      features: cloneFeaturesForText(editing, editingFeature),
+    };
+
     setEditing(undefined);
     setGeojson(newCollection);
   };
@@ -142,8 +165,32 @@ const App: React.FC = () => {
     setEditing(undefined);
   };
 
+  const handleDelete = () => {
+    if (selection) {
+      const features = cloneFeaturesForText();
+      features.splice(selection.id, 1);
+
+      const newCollection = {
+        ...parsed,
+        features,
+      };
+
+      setGeojson(newCollection);
+    }
+  };
+
   const handleNewFeature = useCallback(
-    (f) => setGeojson(addFeature(parsed, f)),
+    (f) => {
+      const features = cloneFeaturesForText();
+      features.push(f);
+
+      const newCollection = {
+        ...parsed,
+        features,
+      };
+
+      setGeojson(newCollection);
+    },
     [parsed]
   );
 

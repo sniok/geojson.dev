@@ -1,11 +1,13 @@
-import React, { useEffect, useState, useContext, useMemo } from "react";
+import React, { useEffect, useState, useContext, useMemo, useCallback } from "react";
 import { featureEach } from "@turf/meta";
 import { featureCollection, FeatureCollection } from "@turf/helpers";
 import { useMap } from "./Mapbox";
-import { GeoJSONSource, Layer } from "mapbox-gl";
-import { addIds, removeFeature } from "./geojsonUtils";
+import { GeoJSONSource, Layer, Expression, ExpressionName } from "mapbox-gl";
 import usePreferDarkMode from "use-prefer-dark-mode";
 import * as layer from "./mapLayers";
+import { Nullable } from "./types";
+
+type StrictExpression = [ExpressionName, ...Array<StrictExpression | number | string | boolean>];
 
 export interface ClickEvent {
   id: number;
@@ -42,33 +44,39 @@ const MapLayer = React.memo(
   ({
     layer,
     onClick,
+    filter,
   }: {
     layer: Omit<mapboxgl.Layer, "source">;
     onClick?: any;
+    filter?: StrictExpression;
   }) => {
+    const [hasLayer, setHasLayer] = useState(false);
     const sourceId = useContext(SourceContext);
     const map = useMap();
+
     useEffect(() => {
       map.addLayer({
         ...layer,
         source: sourceId,
       });
-      map.addLayer({
-        ...layer,
-        id: layer.id + "-tiles",
-        source: "tiles",
-        "source-layer": "geojsonLayer",
-      });
+      // map.addLayer({
+      //   ...layer,
+      //   id: layer.id + "-tiles",
+      //   source: "tiles",
+      //   "source-layer": "geojsonLayer",
+      // });
 
       const hoverOn = () => (map.getCanvas().style.cursor = "pointer");
       const hoverOff = () => (map.getCanvas().style.cursor = "");
 
       if (onClick) {
         map.on("click", layer.id, onClick);
-        map.on("click", layer.id + "-tiles", onClick);
+        // map.on("click", layer.id + "-tiles", onClick);
         map.on("mouseenter", layer.id, hoverOn);
         map.on("mouseleave", layer.id, hoverOff);
       }
+
+      setHasLayer(true);
 
       return () => {
         map.removeLayer(layer.id);
@@ -78,38 +86,19 @@ const MapLayer = React.memo(
           map.off("mouseleave", layer.id, hoverOff);
         }
       };
-    }, [layer]);
+    }, [layer, onClick]);
+
+    useEffect(() => {
+      if (!hasLayer || !layer) {
+        return;
+      }
+
+      map.setFilter(layer.id, filter)
+    }, [hasLayer, layer, filter])
+
     return null;
   }
 );
-
-const bucketFeatures = (geojson: any): any => {
-  const lines: any = [];
-  const fill: any = [];
-  const points: any = [];
-  featureEach(geojson, (f) => {
-    switch ((f.geometry as any).type) {
-      case "Point":
-      case "MultiPoint":
-        points.push(f);
-        return;
-      case "LineString":
-      case "MultiLineString":
-        lines.push(f);
-        return;
-      case "Polygon":
-      case "MultiPolygon":
-        fill.push(f);
-        lines.push(f);
-        return;
-    }
-  });
-  return {
-    lines: featureCollection(lines),
-    fill: featureCollection(fill),
-    points: featureCollection(points),
-  };
-};
 
 export function Geojson({
   data,
@@ -121,41 +110,66 @@ export function Geojson({
   hideIds?: number;
 }) {
   const dark = usePreferDarkMode();
-  const { lines, fill, points } = useMemo(() => {
-    let withIds = addIds(data);
-    if (hideIds !== undefined) {
-      withIds = removeFeature(withIds, hideIds);
-    }
-    return bucketFeatures(withIds);
-  }, [data, hideIds]);
 
-  const handleClick = (e: any) => {
+  const handleClick = useCallback((e: any) => {
     if (onClick) {
       onClick({ lngLat: e.lngLat, id: e.features[0].id });
     }
-  };
+  }, [onClick])
+
+  const idFilter: StrictExpression = hideIds != null ? ["!=", ["id"], hideIds] : ["to-boolean", "true"]
+
+  // Supports Polygon and MultiPolygon.
+  const fillFilter: StrictExpression = ["all",
+    [
+      "any",
+      ["==", ["geometry-type"], "Polygon"],
+      ["==", ["geometry-type"], "MultiPolygon"]
+    ],
+    idFilter
+  ]
+
+  // Supports Point and MultiPoint.
+  const pointFilter: StrictExpression = ["all",
+    [
+      "any",
+      ["==", ["geometry-type"], "Point"],
+      ["==", ["geometry-type"], "MultiPoint"]
+    ],
+    idFilter
+  ]
+
+  // Supports LineString, MultiLineString, Polygon, and MultiPolygon.
+  const linesFilter: StrictExpression = ["all",
+    [
+      "any",
+      ["==", ["geometry-type"], "LineString"],
+      ["==", ["geometry-type"], "MultiLineString"],
+      ["==", ["geometry-type"], "Polygon"],
+      ["==", ["geometry-type"], "MultiPolygon"]
+    ],
+    idFilter
+  ]
 
   return (
-    <>
-      <Source data={fill}>
-        <MapLayer
-          layer={dark ? layer.fillLayer : layer.fillLayerLight}
-          onClick={handleClick}
-        />
-        <MapLayer layer={dark ? layer.lineLayer : layer.lineLayerLight} />
-      </Source>
-      <Source data={points}>
-        <MapLayer
-          layer={dark ? layer.pointLayer : layer.pointLayerLight}
-          onClick={handleClick}
-        />
-      </Source>
-      <Source data={lines}>
-        <MapLayer
-          layer={dark ? layer.linesLayer : layer.linesLayerLight}
-          onClick={handleClick}
-        />
-      </Source>
-    </>
+    <Source data={data}>
+      <MapLayer
+        layer={dark ? layer.fillLayer : layer.fillLayerLight}
+        onClick={handleClick}
+        filter={fillFilter}
+      />
+
+      <MapLayer
+        layer={dark ? layer.pointLayer : layer.pointLayerLight}
+        onClick={handleClick}
+        filter={pointFilter}
+      />
+
+      <MapLayer
+        layer={dark ? layer.linesLayer : layer.linesLayerLight}
+        onClick={handleClick}
+        filter={linesFilter}
+      />
+    </Source>
   );
 }

@@ -1,21 +1,25 @@
 import { useState, useEffect } from "react";
-import { FeatureCollection } from "@turf/turf";
+import { FeatureCollection, Id } from "@turf/turf";
 import geojsonhint from "@mapbox/geojsonhint";
 import { toCollection } from "./geojsonUtils";
+import { Nullable } from "./types";
 
 export type codeStatus =
   | { tag: "ok" }
   | { tag: "jsonError" }
   | { tag: "geojsonError"; errors: { message: string; line: number }[] };
 
+export type IDMap = Nullable<Map<number, Id>>;
+
 export const useParsedGeojson = (
   code: string
-): { parsed: FeatureCollection; codeStatus: codeStatus } => {
+): { parsed: FeatureCollection; codeStatus: codeStatus, idMap: IDMap } => {
   const [parsed, setParsed] = useState<FeatureCollection>({
     type: "FeatureCollection",
     features: [],
   });
   const [codeStatus, setCodeStatus] = useState<codeStatus>({ tag: "ok" });
+  const [idMap, setIDMap] = useState<IDMap>(null);
 
   useEffect(() => {
     try {
@@ -33,12 +37,28 @@ export const useParsedGeojson = (
       if (codeStatus.tag !== "ok") {
         setCodeStatus({ tag: "ok" });
       }
-      setParsed(toCollection(p));
+
+      const collection = toCollection(p);
+
+      const map = new Map<number, Id>();
+      // Set IDs.
+      for (let i = 0; i < collection.features.length; i++) {
+        const feature = collection.features[i];
+        if (feature.id != null) {
+          map.set(i, feature.id);
+        }
+        feature.id = i;
+      }
+
+      setIDMap(map);
+      setParsed(collection);
     } catch (e) {
-      console.log(e);
+      if (!(e instanceof SyntaxError)) {
+        console.log(e);
+      }
       setCodeStatus({ tag: "jsonError" });
     }
   }, [code]);
 
-  return { parsed, codeStatus };
+  return { parsed, codeStatus, idMap };
 };
