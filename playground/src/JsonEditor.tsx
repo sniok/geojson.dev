@@ -1,13 +1,15 @@
 import React, { useRef, useEffect, useState } from "react";
-import Editor, { monaco } from "@monaco-editor/react";
+import { monaco, ControlledEditor } from "@monaco-editor/react";
 import usePDM from "use-prefer-dark-mode";
 import { codeStatus } from "./useParsedGeojson";
 import "./JsonEditor.css";
 import { rafThrottle } from "./rafThrottle";
+import { Nullable } from "./types";
 
 let inited: any = null;
-monaco.init().then((x) => {
-  inited = x;
+monaco.init().then((monaco) => {
+  console.log("Monaco loaded");
+  inited = monaco;
 });
 
 interface Props {
@@ -15,6 +17,7 @@ interface Props {
   value: string;
   codeStatus: codeStatus;
 }
+
 export function JsonEditor(props: Props) {
   const [decorations, setDecorations] = useState<any[]>([]);
   const editor = useRef<any>();
@@ -41,10 +44,9 @@ export function JsonEditor(props: Props) {
     }
   }, [props.codeStatus]);
 
-  const handleChange = () => {
-    if (editor.current) {
-      props.onChange(editor.current.getValue());
-    }
+  const handleChange = (event: any, value?: string): void => {
+    const newValue = value || "{}";
+    props.onChange(newValue);
   };
 
   const init = (_valueGetter: any, _editor: any) => {
@@ -55,9 +57,6 @@ export function JsonEditor(props: Props) {
         enabled: false,
       },
     });
-    _editor.onDidChangeModelContent(handleChange);
-    const d = async () => {};
-    d();
   };
 
   const [width, setWidth] = useState(350);
@@ -99,10 +98,11 @@ export function JsonEditor(props: Props) {
   return (
     <div className="JsonEditor" style={{ width }}>
       <div className="JsonEditor__resizer" onMouseDown={startDragging} />
-      <Editor
+      <ControlledEditor
         height="100vh - 30px"
         language="json"
         editorDidMount={init}
+        onChange={handleChange}
         value={props.value}
         theme={dark ? "dark" : "light"}
       />
