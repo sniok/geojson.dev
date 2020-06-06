@@ -14,7 +14,7 @@ import { useDebounce } from "./useDebounce";
 import Drawer from "./Drawer";
 import { addFeature, removeFeature } from "./geojsonUtils";
 import MapPopup from "./MapPopup";
-import { FeatureCollection, Feature, bbox, AllGeoJSON } from "@turf/turf";
+import { featureCollection, FeatureCollection, Feature, bbox, AllGeoJSON } from "@turf/turf";
 import { useParsedGeojson } from "./useParsedGeojson";
 import Editor from "./Editor";
 import Button from "./Button";
@@ -22,10 +22,9 @@ import { FeatureInfo } from "./FeatureInfo";
 import { Actions } from "./Actions";
 import { DragAndDrop } from "./DragAndDrop";
 
-const example: FeatureCollection = {
-  type: "FeatureCollection",
-  features: [],
-};
+type JSONLikeObject = { [key: string]: any }
+
+const DEFAULT_CODE = JSON.stringify(featureCollection([]), null, 2)
 
 const App: React.FC = () => {
   const mapRef = useRef<mapboxgl.Map>();
@@ -36,18 +35,24 @@ const App: React.FC = () => {
   const [selection, setSelection] = useState<ClickEvent | undefined>();
   const [editing, setEditing] = useState<number | undefined>();
 
-  const [code, setCode] = useState(JSON.stringify(example, null, 2));
+  const [code, setCode] = useState(DEFAULT_CODE);
 
   const debouncedCode = useDebounce(code, 100);
   const { parsed, codeStatus } = useParsedGeojson(debouncedCode);
 
-  const setGeojson = (geojson: any) => {
+  const setGeojson = (geojson: JSONLikeObject) => {
     setCode(JSON.stringify(geojson, null, 2));
   };
 
   const fetchGeojson = async (url: string) => {
-    const response = await fetch(url).then((x) => x.json());
-    setGeojson(response);
+    const response = await fetch(url).then((x) => x.text());
+
+    try {
+      JSON.parse(response)
+      setCode(response)
+    } catch (e) {
+      console.error("Invalid JSON", e);
+    }
   };
 
   const centerOnData = (geojson: AllGeoJSON) => {
@@ -123,9 +128,12 @@ const App: React.FC = () => {
     if (editing === undefined) {
       return;
     }
-    const newFeatures = [...parsed.features];
+
+    const newFeatures = parsed.features.slice();
     newFeatures[editing] = f;
+  
     const newCollection = { ...parsed, features: newFeatures };
+  
     setEditing(undefined);
     setGeojson(newCollection);
   };
