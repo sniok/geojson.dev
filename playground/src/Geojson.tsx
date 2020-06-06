@@ -1,13 +1,20 @@
-import React, { useEffect, useState, useContext, useMemo, useCallback } from "react";
-import { featureEach } from "@turf/meta";
-import { featureCollection, FeatureCollection } from "@turf/helpers";
+import React, {
+  useEffect,
+  useState,
+  useContext,
+  useMemo,
+  useCallback,
+} from "react";
+import { FeatureCollection } from "@turf/helpers";
 import { useMap } from "./Mapbox";
-import { GeoJSONSource, Layer, Expression, ExpressionName } from "mapbox-gl";
+import { GeoJSONSource, ExpressionName } from "mapbox-gl";
 import usePreferDarkMode from "use-prefer-dark-mode";
 import * as layer from "./mapLayers";
-import { Nullable } from "./types";
 
-type StrictExpression = [ExpressionName, ...Array<StrictExpression | number | string | boolean>];
+type StrictExpression = [
+  ExpressionName,
+  ...Array<StrictExpression | number | string | boolean>
+];
 
 export interface ClickEvent {
   id: number;
@@ -93,8 +100,8 @@ const MapLayer = React.memo(
         return;
       }
 
-      map.setFilter(layer.id, filter)
-    }, [hasLayer, layer, filter])
+      map.setFilter(layer.id, filter);
+    }, [hasLayer, layer, filter]);
 
     return null;
   }
@@ -111,45 +118,52 @@ export function Geojson({
 }) {
   const dark = usePreferDarkMode();
 
-  const handleClick = useCallback((e: any) => {
-    if (onClick) {
-      onClick({ lngLat: e.lngLat, id: e.features[0].id });
-    }
-  }, [onClick])
+  const handleClick = useCallback(
+    (e: any) => {
+      if (onClick) {
+        onClick({ lngLat: e.lngLat, id: e.features[0].id });
+      }
+    },
+    [onClick]
+  );
 
-  const idFilter: StrictExpression = hideIds != null ? ["!=", ["id"], hideIds] : ["to-boolean", "true"]
+  const idFilter: StrictExpression =
+    hideIds != null ? ["!=", ["id"], hideIds] : ["to-boolean", "true"];
 
   // Supports Polygon and MultiPolygon.
-  const fillFilter: StrictExpression = ["all",
+  const fillFilter: StrictExpression = [
+    "all",
     [
       "any",
       ["==", ["geometry-type"], "Polygon"],
-      ["==", ["geometry-type"], "MultiPolygon"]
+      ["==", ["geometry-type"], "MultiPolygon"],
     ],
-    idFilter
-  ]
+    idFilter,
+  ];
 
   // Supports Point and MultiPoint.
-  const pointFilter: StrictExpression = ["all",
+  const pointFilter: StrictExpression = [
+    "all",
     [
       "any",
       ["==", ["geometry-type"], "Point"],
-      ["==", ["geometry-type"], "MultiPoint"]
+      ["==", ["geometry-type"], "MultiPoint"],
     ],
-    idFilter
-  ]
+    idFilter,
+  ];
 
   // Supports LineString, MultiLineString, Polygon, and MultiPolygon.
-  const linesFilter: StrictExpression = ["all",
+  const linesFilter: StrictExpression = [
+    "all",
     [
       "any",
       ["==", ["geometry-type"], "LineString"],
       ["==", ["geometry-type"], "MultiLineString"],
       ["==", ["geometry-type"], "Polygon"],
-      ["==", ["geometry-type"], "MultiPolygon"]
+      ["==", ["geometry-type"], "MultiPolygon"],
     ],
-    idFilter
-  ]
+    idFilter,
+  ];
 
   return (
     <Source data={data}>

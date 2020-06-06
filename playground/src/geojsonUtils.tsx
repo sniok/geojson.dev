@@ -1,11 +1,10 @@
-import turf, {
+import {
   featureCollection,
   GeoJSONObject,
   FeatureCollection,
   Feature,
   Geometry,
   feature,
-  featureEach,
 } from "@turf/turf";
 
 const isCollection = (geojson: GeoJSONObject): geojson is FeatureCollection =>
