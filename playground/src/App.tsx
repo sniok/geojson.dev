@@ -27,10 +27,21 @@ import { FeatureInfo } from "./FeatureInfo";
 import { Actions } from "./Actions";
 import { DragAndDrop } from "./DragAndDrop";
 import { Nullable } from "./types";
+import { removeProperty, applyEdits } from "./json/edit";
+import { toCollection } from "./geojsonUtils";
+import { FormattingOptions } from "./json/formatter";
+import useStringByteLength from "./useStringByteLength";
 
 type JSONLikeObject = { [key: string]: any };
 
 const DEFAULT_CODE = JSON.stringify(featureCollection([]), null, 2);
+
+// Default options for JSON formatter.
+const DEFAULT_FORMATTING_OPTIONS: FormattingOptions = {
+  tabSize: 2,
+  insertSpaces: true,
+  eol: "\n",
+};
 
 const App: React.FC = () => {
   const mapRef = useRef<mapboxgl.Map>();
@@ -44,11 +55,12 @@ const App: React.FC = () => {
   const [code, setCode] = useState(DEFAULT_CODE);
 
   const throttledCode = useThrottle(code, 100);
-  const byteLength: number = useMemo(() => {
-    // Use native features instead of buffer here.
-    return new TextEncoder().encode(throttledCode).length
-  }, [throttledCode]);
-  const { parsed, codeStatus, idMap } = useParsedGeojson(throttledCode);
+  const { byteLength, isLargeFile } = useStringByteLength(throttledCode);
+  const { parsed: parsedGeoJson, codeStatus, idMap } = useParsedGeojson(
+    throttledCode
+  );
+
+  const parsed = toCollection(parsedGeoJson);
 
   const setGeojson = (geojson: JSONLikeObject) => {
     setCode(JSON.stringify(geojson, null, 2));
@@ -142,7 +154,7 @@ const App: React.FC = () => {
     editingFeature?: Feature
   ) => {
     // TODO: In the future, could benchmark how much faster it is using string-based JSON APIs
-    // from VSCode source (under MIT license).
+    // from VSCode.
     return parsed.features.map((parsedFeature, i) => {
       if (i === editing && editingFeature) {
         return {
@@ -178,15 +190,17 @@ const App: React.FC = () => {
 
   const handleDelete = () => {
     if (selection) {
-      const features = cloneFeaturesForText();
-      features.splice(selection.id, 1);
+      if (parsedGeoJson && parsedGeoJson.type === "FeatureCollection") {
+        const edits = removeProperty(
+          throttledCode,
+          ["features", selection.id],
+          isLargeFile ? undefined : DEFAULT_FORMATTING_OPTIONS
+        );
 
-      const newCollection = {
-        ...parsed,
-        features,
-      };
-
-      setGeojson(newCollection);
+        setCode(applyEdits(code, edits));
+      } else {
+        setCode(DEFAULT_CODE);
+      }
     }
   };
 
@@ -273,7 +287,12 @@ const App: React.FC = () => {
         {!minimal && <Actions parsed={parsed} onGeojson={setCode} />}
         {selection && <FeatureInfo feature={featureInfoValue} />}
         {!hiddenEditor && (
-          <JsonEditor onChange={setCode} value={code} codeStatus={codeStatus} byteLength={byteLength} />
+          <JsonEditor
+            onChange={setCode}
+            value={code}
+            codeStatus={codeStatus}
+            isLargeFile={isLargeFile}
+          />
         )}
       </div>
       <StatusBar codeStatus={codeStatus} byteLength={byteLength} />

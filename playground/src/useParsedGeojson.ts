@@ -4,7 +4,6 @@ import { FeatureCollection, Id } from "@turf/turf";
 import geojsonhint from "@mapbox/geojsonhint";
 import * as VSJSON from "./json";
 
-import { toCollection } from "./geojsonUtils";
 import { Nullable } from "./types";
 
 export type CodeStatus =
@@ -73,10 +72,8 @@ export const useParsedGeojson = (
       setCodeStatus({ tag: "ok" });
     }
 
-    const collection = toCollection(p);
-
     setIDMap(newIDMap);
-    setParsed(collection);
+    setParsed(p);
   }, [code]);
 
   return { parsed, codeStatus, idMap };

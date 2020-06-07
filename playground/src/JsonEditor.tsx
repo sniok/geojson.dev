@@ -47,16 +47,13 @@ interface Props {
   onChange: (code: string) => void;
   value: string;
   codeStatus: CodeStatus;
-  byteLength: number;
+  isLargeFile: boolean;
 }
-
-// One megabyte in bytes.
-const ONE_MEGABYTE = 1024 * 1024;
 
 // Owner for VSCode markers.
 const OWNER = "geojsonError"
 
-export function JsonEditor({ onChange, codeStatus, value, byteLength }: Props) {
+export function JsonEditor({ onChange, codeStatus, value, isLargeFile }: Props) {
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
   const editorRef = useRef<monaco.editor.ICodeEditor>();
   const dark = usePreferDarkMode();
@@ -151,9 +148,6 @@ export function JsonEditor({ onChange, codeStatus, value, byteLength }: Props) {
     e.preventDefault();
     isDragging.current = true;
   };
-
-  // Disable folding and language features when file is too large.
-  const isLargeFile = byteLength > ONE_MEGABYTE;
 
   return (
     <div className="JsonEditor" style={{ width }}>
