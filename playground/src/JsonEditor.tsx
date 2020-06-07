@@ -1,12 +1,12 @@
-import type * as Monaco from "monaco-editor";
-
 import React, { useRef, useEffect, useState } from "react";
+
 import { monaco as MonacoLoader, ControlledEditor } from "@monaco-editor/react";
+import * as Monaco from 'monaco-editor/esm/vs/editor/editor.api';
+
 import usePreferDarkMode from "use-prefer-dark-mode";
 import { CodeStatus } from "./useParsedGeojson";
 import "./JsonEditor.css";
 import { rafThrottle } from "./rafThrottle";
-import { Nullable } from "./types";
 
 type Diagnostic = Monaco.editor.IMarkerData;
 

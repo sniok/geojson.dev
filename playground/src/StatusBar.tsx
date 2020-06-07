@@ -1,4 +1,5 @@
 import React from "react";
+import prettyBytes from "pretty-bytes";
 import { CodeStatus } from "./useParsedGeojson";
 import "./StatusBar.css";
 
@@ -16,7 +17,7 @@ function StatusBar(props: Props) {
 
   return (
     <div className="StatusBar">
-      <div className="StatusBar__status"><b>Status:</b> {status} <b>Byte Length:</b> {props.byteLength}B</div>
+      <div className="StatusBar__status"><b>Status:</b> {status} <b>Byte Length:</b> {prettyBytes(props.byteLength)}</div>
       <div className="StatusBar__info">playground.geojson.dev</div>
     </div>
   );
