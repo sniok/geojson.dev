@@ -1,78 +1,82 @@
 import { useState, useEffect } from "react";
 import { FeatureCollection, Id } from "@turf/turf";
+
 import geojsonhint from "@mapbox/geojsonhint";
+import * as VSJSON from "./json";
+
 import { toCollection } from "./geojsonUtils";
 import { Nullable } from "./types";
 
-export type codeStatus =
+export type CodeStatus =
   | { tag: "ok" }
-  | { tag: "jsonError" }
-  | { tag: "geojsonError"; errors: { message: string; line: number }[] };
+  | { tag: "jsonError"; errors: VSJSON.ParseError[] }
+  | {
+      tag: "geojsonError";
+      errors: { message: string; offset: number; tokenLength: number }[];
+    };
 
 export type IDMap = Nullable<Map<number, Id>>;
 
 export const useParsedGeojson = (
   code: string
-): { parsed: FeatureCollection; codeStatus: codeStatus, idMap: IDMap } => {
+): { parsed: FeatureCollection; codeStatus: CodeStatus; idMap: IDMap } => {
   const [parsed, setParsed] = useState<FeatureCollection>({
     type: "FeatureCollection",
     features: [],
   });
-  const [codeStatus, setCodeStatus] = useState<codeStatus>({ tag: "ok" });
+  const [codeStatus, setCodeStatus] = useState<CodeStatus>({ tag: "ok" });
   const [idMap, setIDMap] = useState<IDMap>(null);
 
   useEffect(() => {
-    try {
-      const p = JSON.parse(code);
-      const errors = geojsonhint.hint(p);
+    const errors: VSJSON.ParseError[] = [];
 
-      if (errors.length) {
-        // Create more detailed erros
-        const detailedErrors = geojsonhint
-          .hint(code)
-          .filter((it: any) => !it.message.includes("right-hand"))
-          .map((e: any) => {
-            const message: string = e.message;
-
-            if (!message || !message.length) {
-              return e
-            }
-
-            return {
-              ...e,
-              // Convert from geojsonhint style to proper English.
-              //
-              // Example: this is an error --> This is an error.
-              message: message.charAt(0).toUpperCase() + message.substring(1) + '.'
-            }
-          });
-        setCodeStatus({ tag: "geojsonError", errors: detailedErrors });
-        return;
-      }
-      if (codeStatus.tag !== "ok") {
-        setCodeStatus({ tag: "ok" });
-      }
-
-      const collection = toCollection(p);
-
-      const map = new Map<number, Id>();
-      // Set IDs.
-      for (let i = 0; i < collection.features.length; i++) {
-        const feature = collection.features[i];
-        if (feature.id != null) {
-          map.set(i, feature.id);
+    const newIDMap = new Map<number, Id>();
+    let i: number = 0;
+    const p = VSJSON.parseWithLines(code, errors, VSJSON.ParseOptions.DEFAULT, (object) => {
+      if (object.type === 'Feature') {
+        if (object.id != null) {
+          newIDMap.set(i, object.id);
         }
-        feature.id = i;
+        object.id = i++;
       }
+    });
 
-      setIDMap(map);
-      setParsed(collection);
-    } catch (e) {
-      if (!(e instanceof SyntaxError)) {
-        console.log(e);
-      }
-      setCodeStatus({ tag: "jsonError" });
+    if (errors.length) {
+      setCodeStatus({ tag: "jsonError", errors });
+      return;
     }
+
+    const geoErrors = geojsonhint.hint(p);
+
+    if (geoErrors.length) {
+      // Create more detailed erros
+      const detailedErrors = geoErrors
+        .filter((it: any) => !it.message.includes("right-hand"))
+        .map((e: any) => {
+          const { message, line } = e;
+
+          return {
+            offset: line[0],
+            tokenLength: line[1],
+            // Convert from geojsonhint style to proper English.
+            // Example: this is an error --> This is an error.
+            message:
+              message.charAt(0).toUpperCase() + message.substring(1) + ".",
+          };
+        });
+
+      setCodeStatus({ tag: "geojsonError", errors: detailedErrors });
+      return;
+    }
+
+    if (codeStatus.tag !== "ok") {
+      setCodeStatus({ tag: "ok" });
+    }
+
+    const collection = toCollection(p);
+
+    setIDMap(newIDMap);
+    setParsed(collection);
   }, [code]);
 
   return { parsed, codeStatus, idMap };

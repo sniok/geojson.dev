@@ -27,6 +27,7 @@ import { FeatureInfo } from "./FeatureInfo";
 import { Actions } from "./Actions";
 import { DragAndDrop } from "./DragAndDrop";
 import { Nullable } from "./types";
+import { Buffer } from "buffer";
 
 type JSONLikeObject = { [key: string]: any };
 
@@ -43,8 +44,11 @@ const App: React.FC = () => {
 
   const [code, setCode] = useState(DEFAULT_CODE);
 
-  const debouncedCode = useThrottle(code, 100);
-  const { parsed, codeStatus, idMap } = useParsedGeojson(debouncedCode);
+  const throttledCode = useThrottle(code, 100);
+  const byteLength: number = useMemo(() => {
+    return Buffer.byteLength(throttledCode, "utf-8");
+  }, [throttledCode]);
+  const { parsed, codeStatus, idMap } = useParsedGeojson(throttledCode);
 
   const setGeojson = (geojson: JSONLikeObject) => {
     setCode(JSON.stringify(geojson, null, 2));
@@ -269,10 +273,10 @@ const App: React.FC = () => {
         {!minimal && <Actions parsed={parsed} onGeojson={setCode} />}
         {selection && <FeatureInfo feature={featureInfoValue} />}
         {!hiddenEditor && (
-          <JsonEditor onChange={setCode} value={code} codeStatus={codeStatus} />
+          <JsonEditor onChange={setCode} value={code} codeStatus={codeStatus} byteLength={byteLength} />
         )}
       </div>
-      <StatusBar codeStatus={codeStatus} />
+      <StatusBar codeStatus={codeStatus} byteLength={byteLength} />
     </div>
   );
 };

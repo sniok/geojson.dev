@@ -2,90 +2,109 @@
 
 import React, { useRef, useEffect, useState } from "react";
 import { monaco as MonacoLoader, ControlledEditor } from "@monaco-editor/react";
-import usePDM from "use-prefer-dark-mode";
-import { codeStatus } from "./useParsedGeojson";
+import usePreferDarkMode from "use-prefer-dark-mode";
+import { CodeStatus } from "./useParsedGeojson";
 import "./JsonEditor.css";
 import { rafThrottle } from "./rafThrottle";
 import { Nullable } from "./types";
 
-type Decoration = monaco.editor.IModelDeltaDecoration;
+type Diagnostic = monaco.editor.IMarkerData;
 
 // Force Monaco Editor to use our local version.
-(MonacoLoader as any).config({
-  paths: {
-    vs: "vs",
-  },
-});
-(MonacoLoader as any).__config.urls.monacoBase = "vs";
-(MonacoLoader as any).__config.urls.monacoLoader = "vs/loader.js";
+function configureMonaco(loader: any, vs: string): typeof MonacoLoader {
+  loader.config({ paths: { vs } });
+  loader.__config.urls.monacoBase = vs;
+  loader.__config.urls.monacoLoader = `${vs}/loader.js`;
 
-let inited: typeof monaco;
-MonacoLoader.init().then(async (monacoObj: typeof monaco) => {
-  console.log("Monaco loaded");
-  inited = monacoObj;
+  return loader;
+}
 
-  const { default: schema } = await import("./schema.json");
+let monacoObj: typeof monaco;
+configureMonaco(MonacoLoader, "vs")
+  .init()
+  .then(async (inited: typeof monaco) => {
+    console.log("Monaco loaded");
+    monacoObj = inited;
 
-  // http://json.schemastore.org/geojson
-  monacoObj.languages.json.jsonDefaults.setDiagnosticsOptions({
-    validate: false,
-    schemas: [
-      {
-        uri: "geojson-schema.json",
-        fileMatch: [""],
-        schema,
-      },
-    ],
+    const { default: schema } = await import("./schema.json");
+
+    // Validate schemas.
+    // http://json.schemastore.org/geojson
+    monacoObj.languages.json.jsonDefaults.setDiagnosticsOptions({
+      validate: false,
+      allowComments: false,
+      schemas: [
+        {
+          uri: "geojson-schema.json",
+          fileMatch: [""],
+          schema,
+        },
+      ],
+    });
   });
-});
 
 interface Props {
   onChange: (code: string) => void;
   value: string;
-  codeStatus: codeStatus;
+  codeStatus: CodeStatus;
+  byteLength: number;
 }
 
-export function JsonEditor(props: Props) {
-  const [decorations, setDecorations] = useState<any[]>([]);
-  const editor = useRef<monaco.editor.ICodeEditor>();
-  const dark = usePDM();
+// One megabyte in bytes.
+const ONE_MEGABYTE = 1024 * 1024;
+
+// Owner for VSCode markers.
+const OWNER = "geojsonError"
+
+export function JsonEditor({ onChange, codeStatus, value, byteLength }: Props) {
+  const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
+  const editorRef = useRef<monaco.editor.ICodeEditor>();
+  const dark = usePreferDarkMode();
 
   // https://github.com/microsoft/monaco-css/blob/master/src/languageFeatures.ts
   useEffect(() => {
-    if (inited == null || !editor.current) {
+    if (monacoObj == null || !editorRef.current) {
       return;
     }
 
-    if (props.codeStatus.tag === "geojsonError") {
-      const newDecorations: Decoration[] = props.codeStatus.errors.map(
-        (e) =>
-          ({
-            range: new inited.Range(e.line + 1, 1, e.line + 1, Infinity),
-            options: {
-              isWholeLine: true,
-              className: "editor__error-line",
-              hoverMessage: [{ value: "**GeoJSON Error**" }, { value: e.message }],
-            },
-          } as Decoration)
-      );
+    const editor = editorRef.current;
+    const model = editor.getModel();
 
-      const ids = editor.current.deltaDecorations(decorations, newDecorations);
-      setDecorations(ids);
-    } else {
-      editor.current.deltaDecorations(decorations, []);
-      setDecorations([]);
+    if (codeStatus.tag === "geojsonError" && model) {
+      const newDiagnostics: Diagnostic[] = codeStatus.errors.map((e) => {
+        const range = monacoObj.Range.fromPositions(
+          model.getPositionAt(e.offset),
+          model.getPositionAt(e.offset + e.tokenLength)
+        );
+
+        return {
+          severity: monacoObj.MarkerSeverity.Error,
+          startLineNumber: range.startLineNumber,
+          startColumn: range.startColumn,
+          endLineNumber: range.endLineNumber,
+          endColumn: range.endColumn,
+          message: e.message,
+          source: "GeoJSON Error"
+        } as Diagnostic;
+      });
+
+      setDiagnostics(newDiagnostics);
+      monacoObj.editor.setModelMarkers(model, OWNER, newDiagnostics);
+    } else if (model) {
+      setDiagnostics([]);
+      monacoObj.editor.setModelMarkers(model, OWNER, []);
     }
 
     return () => {};
-  }, [props.codeStatus]);
+  }, [codeStatus]);
 
-  const handleChange = (event: any, value?: string): void => {
+  const handleChange = (_: any, value?: string): void => {
     const newValue = value || "{}";
-    props.onChange(newValue);
+    onChange(newValue);
   };
 
   const init = (_valueGetter: any, _editor: any) => {
-    editor.current = _editor;
+    editorRef.current = _editor;
     _editor.updateOptions({
       fontSize: 12,
       minimap: {
@@ -99,16 +118,19 @@ export function JsonEditor(props: Props) {
 
   useEffect(() => {
     console.log(document.body.clientWidth);
+
     const throttledResize = rafThrottle((e: MouseEvent) => {
       const width = document.body.clientWidth - e.clientX;
       setWidth(Math.max(width, 10));
     });
+
     const handleMove = (e: MouseEvent) => {
       if (!isDragging.current) {
         return;
       }
       throttledResize(e);
     };
+
     const handleStop = (e: MouseEvent) => {
       if (isDragging.current) {
         isDragging.current = false;
@@ -130,15 +152,19 @@ export function JsonEditor(props: Props) {
     isDragging.current = true;
   };
 
+  // Disable folding and language features when file is too large.
+  const isLargeFile = byteLength > ONE_MEGABYTE;
+
   return (
     <div className="JsonEditor" style={{ width }}>
       <div className="JsonEditor__resizer" onMouseDown={startDragging} />
       <ControlledEditor
         height="100vh - 30px"
-        language="json"
+        language={isLargeFile ? "plaintext" : "json"}
+        options={{ folding: !isLargeFile }}
         editorDidMount={init}
+        value={value}
         onChange={handleChange}
-        value={props.value}
         theme={dark ? "dark" : "light"}
       />
     </div>
