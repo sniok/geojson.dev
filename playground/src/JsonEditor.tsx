@@ -1,4 +1,4 @@
-/// <reference path="./monaco.d.ts" />
+import type * as Monaco from "monaco-editor";
 
 import React, { useRef, useEffect, useState } from "react";
 import { monaco as MonacoLoader, ControlledEditor } from "@monaco-editor/react";
@@ -8,7 +8,7 @@ import "./JsonEditor.css";
 import { rafThrottle } from "./rafThrottle";
 import { Nullable } from "./types";
 
-type Diagnostic = monaco.editor.IMarkerData;
+type Diagnostic = Monaco.editor.IMarkerData;
 
 // Force Monaco Editor to use our local version.
 function configureMonaco(loader: any, vs: string): typeof MonacoLoader {
@@ -19,10 +19,10 @@ function configureMonaco(loader: any, vs: string): typeof MonacoLoader {
   return loader;
 }
 
-let monacoObj: typeof monaco;
+let monacoObj: typeof Monaco;
 configureMonaco(MonacoLoader, "vs")
   .init()
-  .then(async (inited: typeof monaco) => {
+  .then(async (inited: typeof Monaco) => {
     console.log("Monaco loaded");
     monacoObj = inited;
 
@@ -55,7 +55,7 @@ const OWNER = "geojsonError"
 
 export function JsonEditor({ onChange, codeStatus, value, isLargeFile }: Props) {
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
-  const editorRef = useRef<monaco.editor.ICodeEditor>();
+  const editorRef = useRef<Monaco.editor.ICodeEditor>();
   const dark = usePreferDarkMode();
 
   // https://github.com/microsoft/monaco-css/blob/master/src/languageFeatures.ts
