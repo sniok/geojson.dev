@@ -16,7 +16,7 @@ import "./App.css";
 import cx from "classnames";
 import StatusBar from "./StatusBar";
 // @ts-ignore
-import { useThrottle } from "use-throttle";
+import useThrottle from "./useThrottle";
 import Drawer from "./Drawer";
 import MapPopup from "./MapPopup";
 import { featureCollection, Feature, bbox, AllGeoJSON, Id } from "@turf/turf";
@@ -27,7 +27,6 @@ import { FeatureInfo } from "./FeatureInfo";
 import { Actions } from "./Actions";
 import { DragAndDrop } from "./DragAndDrop";
 import { Nullable } from "./types";
-import { Buffer } from "buffer";
 
 type JSONLikeObject = { [key: string]: any };
 
@@ -46,7 +45,8 @@ const App: React.FC = () => {
 
   const throttledCode = useThrottle(code, 100);
   const byteLength: number = useMemo(() => {
-    return Buffer.byteLength(throttledCode, "utf-8");
+    // Use native features instead of buffer here.
+    return new TextEncoder().encode(throttledCode).length
   }, [throttledCode]);
   const { parsed, codeStatus, idMap } = useParsedGeojson(throttledCode);
 
