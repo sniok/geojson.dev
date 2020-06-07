@@ -24,3 +24,6 @@ yarn-error.log*
 
 .now
 .vscode
+
+# Monaco Editor files
+public/vs
