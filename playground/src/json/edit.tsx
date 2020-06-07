@@ -147,25 +147,34 @@ export function setProperty(
       // Insert
       const newProperty = `${JSON.stringify(value)}`;
       let edit: Edit;
-      if (parent.children.length === 0 || lastSegment === 0) {
+      if (parent.children.length > lastSegment) {
+        // replace value
+        const previous = parent.children[lastSegment];
         edit = {
-          offset: parent.offset + 1,
-          length: 0,
-          content:
-            parent.children.length === 0 ? newProperty : newProperty + ",",
+          offset: previous.offset,
+          length: previous.length,
+          content: newProperty,
         };
       } else {
-        const index =
-          lastSegment === -1 || lastSegment > parent.children.length
-            ? parent.children.length
-            : lastSegment;
-        const previous = parent.children[index - 1];
-        edit = {
-          offset: previous.offset + previous.length,
-          length: 0,
-          content: "," + newProperty,
-        };
+        // insert
+        if (parent.children.length === 0 || lastSegment === 0) {
+          edit = {
+            offset: parent.offset + 1,
+            length: 0,
+            content:
+              parent.children.length === 0 ? newProperty : newProperty + ",",
+          };
+        } else {
+          const index = parent.children.length
+          const previous = parent.children[index - 1];
+          edit = {
+            offset: previous.offset + previous.length,
+            length: 0,
+            content: "," + newProperty,
+          };
+        }
       }
+
       return withFormatting(text, edit, formattingOptions);
     } else {
       //Removal
@@ -261,7 +270,7 @@ export function applyEdit(text: string, edit: Edit): string {
   );
 }
 
-export function applyEdits(text: string, edits: Edit[]): string {
+export function applyEdits(text: string, edits: Edit[], allowOverlappingEdits: boolean = false): string {
   let sortedEdits = mergeSort(edits, (a, b) => {
     const diff = a.offset - b.offset;
     if (diff === 0) {
@@ -272,7 +281,7 @@ export function applyEdits(text: string, edits: Edit[]): string {
   let lastModifiedOffset = text.length;
   for (let i = sortedEdits.length - 1; i >= 0; i--) {
     let e = sortedEdits[i];
-    if (e.offset + e.length <= lastModifiedOffset) {
+    if (allowOverlappingEdits || e.offset + e.length <= lastModifiedOffset) {
       text = applyEdit(text, e);
     } else {
       throw new Error("Overlapping edit");

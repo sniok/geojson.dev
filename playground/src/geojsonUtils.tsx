@@ -7,11 +7,11 @@ import {
   feature,
 } from "@turf/turf";
 
-const isCollection = (geojson: GeoJSONObject): geojson is FeatureCollection =>
-  geojson.type === "FeatureCollection";
-const isFeature = (geojson: GeoJSONObject): geojson is Feature =>
+export const isCollection = (geojson: GeoJSONObject): geojson is FeatureCollection =>
+  geojson && geojson.type === "FeatureCollection";
+export const isFeature = (geojson: GeoJSONObject): geojson is Feature =>
   geojson.type === "Feature";
-const isGeometry = (geojson: GeoJSONObject): geojson is Geometry =>
+export const isGeometry = (geojson: GeoJSONObject): geojson is Geometry =>
   [
     "Point",
     "MultiPoint",

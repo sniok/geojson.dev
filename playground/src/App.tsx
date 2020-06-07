@@ -27,8 +27,8 @@ import { FeatureInfo } from "./FeatureInfo";
 import { Actions } from "./Actions";
 import { DragAndDrop } from "./DragAndDrop";
 import { Nullable } from "./types";
-import { removeProperty, applyEdits } from "./json/edit";
-import { toCollection } from "./geojsonUtils";
+import { removeProperty, setProperty, applyEdits } from "./json/edit";
+import { toCollection, isCollection } from "./geojsonUtils";
 import { FormattingOptions } from "./json/formatter";
 import useStringByteLength from "./useStringByteLength";
 
@@ -149,12 +149,10 @@ const App: React.FC = () => {
       : undefined;
   };
 
-  const cloneFeaturesForText = (
+  const cloneFeaturesWithOriginalIDs = (
     editing: number = -1,
     editingFeature?: Feature
   ) => {
-    // TODO: In the future, could benchmark how much faster it is using string-based JSON APIs
-    // from VSCode.
     return parsed.features.map((parsedFeature, i) => {
       if (i === editing && editingFeature) {
         return {
@@ -175,13 +173,34 @@ const App: React.FC = () => {
       return;
     }
 
-    const newCollection = {
-      ...parsed,
-      features: cloneFeaturesForText(editing, editingFeature),
-    };
+    if (isCollection(parsedGeoJson)) {
+      // If already a feature collection, we can just setCode using JSON lib.
+      const jsonPath = ["features", editing];
+      const formattingOptions = isLargeFile
+        ? undefined
+        : DEFAULT_FORMATTING_OPTIONS;
+
+      const edits = setProperty(
+        throttledCode,
+        jsonPath,
+        {
+          ...editingFeature,
+          id: getIDMapping(editingFeature),
+        },
+        formattingOptions
+      );
+
+      setCode(applyEdits(throttledCode, edits, true));
+    } else {
+      const newCollection = {
+        ...parsed,
+        features: cloneFeaturesWithOriginalIDs(editing, editingFeature),
+      };
+
+      setGeojson(newCollection);
+    }
 
     setEditing(undefined);
-    setGeojson(newCollection);
   };
 
   const handleCancel = () => {
@@ -190,14 +209,14 @@ const App: React.FC = () => {
 
   const handleDelete = () => {
     if (selection) {
-      if (parsedGeoJson && parsedGeoJson.type === "FeatureCollection") {
+      if (isCollection(parsedGeoJson)) {
         const edits = removeProperty(
           throttledCode,
           ["features", selection.id],
           isLargeFile ? undefined : DEFAULT_FORMATTING_OPTIONS
         );
 
-        setCode(applyEdits(code, edits));
+        setCode(applyEdits(throttledCode, edits));
       } else {
         setCode(DEFAULT_CODE);
       }
@@ -206,15 +225,28 @@ const App: React.FC = () => {
 
   const handleNewFeature = useCallback(
     (f) => {
-      const features = cloneFeaturesForText();
-      features.push(f);
+      if (isCollection(parsedGeoJson)) {
+        // If already a feature collection, we can just setCode using JSON lib.
+        const edits = setProperty(
+          throttledCode,
+          ["features", parsed.features.length],
+          f,
+          isLargeFile ? undefined : DEFAULT_FORMATTING_OPTIONS
+        );
 
-      const newCollection = {
-        ...parsed,
-        features,
-      };
+        setCode(applyEdits(throttledCode, edits));
+      } else {
+        // If not, probably faster to use the 'parsed' variable.
+        const features = cloneFeaturesWithOriginalIDs();
+        features.push(f);
 
-      setGeojson(newCollection);
+        const newCollection = {
+          ...parsed,
+          features,
+        };
+
+        setGeojson(newCollection);
+      }
     },
     [parsed]
   );
