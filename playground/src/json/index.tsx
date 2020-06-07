@@ -1368,16 +1368,21 @@ export function visit(
   function parseLiteral(): boolean {
     switch (_scanner.getToken()) {
       case SyntaxKind.NumericLiteral:
-        let value = 0;
-        try {
-          value = JSON.parse(_scanner.getTokenValue());
-          if (typeof value !== "number") {
+        const tokenValue = _scanner.getTokenValue();
+        let value = parseFloat(tokenValue);
+
+        if (isNaN(value)) {
+          try {
+            value = JSON.parse(_scanner.getTokenValue());
+            if (typeof value !== "number") {
+              handleError(ParseErrorCode.InvalidNumberFormat);
+              value = 0;
+            }
+          } catch (e) {
             handleError(ParseErrorCode.InvalidNumberFormat);
-            value = 0;
           }
-        } catch (e) {
-          handleError(ParseErrorCode.InvalidNumberFormat);
         }
+
         onLiteralValue(value);
         break;
       case SyntaxKind.NullKeyword:
