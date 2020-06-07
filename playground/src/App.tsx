@@ -1,4 +1,10 @@
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
 import Edit from "react-feather/dist/icons/edit";
 import Trash from "react-feather/dist/icons/trash";
 import ChevronLeft from "react-feather/dist/icons/chevron-left";
@@ -7,24 +13,34 @@ import JsonEditor from "./JsonEditor";
 import Mapbox from "./Mapbox";
 import { Geojson, ClickEvent } from "./Geojson";
 import "./App.css";
-// @ts-ignore
 import cx from "classnames";
 import StatusBar from "./StatusBar";
-import { useDebounce } from "./useDebounce";
+// @ts-ignore
+import useThrottle from "./useThrottle";
 import Drawer from "./Drawer";
-import { addFeature, removeFeature } from "./geojsonUtils";
 import MapPopup from "./MapPopup";
-import { FeatureCollection, Feature, bbox, AllGeoJSON } from "@turf/turf";
+import { featureCollection, Feature, bbox, AllGeoJSON, Id } from "@turf/turf";
 import { useParsedGeojson } from "./useParsedGeojson";
 import Editor from "./Editor";
 import Button from "./Button";
 import { FeatureInfo } from "./FeatureInfo";
 import { Actions } from "./Actions";
 import { DragAndDrop } from "./DragAndDrop";
+import { Nullable } from "./types";
+import { removeProperty, setProperty, applyEdits } from "./json/edit";
+import { toCollection, isCollection } from "./geojsonUtils";
+import { FormattingOptions } from "./json/formatter";
+import useStringByteLength from "./useStringByteLength";
 
-const example: FeatureCollection = {
-  type: "FeatureCollection",
-  features: [],
+type JSONLikeObject = { [key: string]: any };
+
+const DEFAULT_CODE = JSON.stringify(featureCollection([]), null, 2);
+
+// Default options for JSON formatter.
+const DEFAULT_FORMATTING_OPTIONS: FormattingOptions = {
+  tabSize: 2,
+  insertSpaces: true,
+  eol: "\n",
 };
 
 const App: React.FC = () => {
@@ -36,18 +52,29 @@ const App: React.FC = () => {
   const [selection, setSelection] = useState<ClickEvent | undefined>();
   const [editing, setEditing] = useState<number | undefined>();
 
-  const [code, setCode] = useState(JSON.stringify(example, null, 2));
+  const [code, setCode] = useState(DEFAULT_CODE);
 
-  const debouncedCode = useDebounce(code, 100);
-  const { parsed, codeStatus } = useParsedGeojson(debouncedCode);
+  const throttledCode = useThrottle(code, 100);
+  const { byteLength, isLargeFile } = useStringByteLength(throttledCode);
+  const { parsed: parsedGeoJson, codeStatus, idMap } = useParsedGeojson(
+    throttledCode
+  );
 
-  const setGeojson = (geojson: any) => {
+  const parsed = toCollection(parsedGeoJson);
+
+  const setGeojson = (geojson: JSONLikeObject) => {
     setCode(JSON.stringify(geojson, null, 2));
   };
 
   const fetchGeojson = async (url: string) => {
-    const response = await fetch(url).then((x) => x.json());
-    setGeojson(response);
+    const response = await fetch(url).then((x) => x.text());
+
+    try {
+      JSON.parse(response);
+      setCode(response);
+    } catch (e) {
+      console.error("Invalid JSON", e);
+    }
   };
 
   const centerOnData = (geojson: AllGeoJSON) => {
@@ -105,39 +132,144 @@ const App: React.FC = () => {
     }
   }, []);
 
-  const onFeatureClick = (e: ClickEvent) => {
-    setSelection(e);
-  };
-
-  const handleDelete = () => {
-    if (selection) {
-      setGeojson(removeFeature(parsed, selection.id));
-    }
-  };
+  const onFeatureClick = useCallback(
+    (e: ClickEvent) => {
+      setSelection(e);
+    },
+    [setSelection]
+  );
 
   const handleEdit = (id: number) => {
     setEditing(id);
   };
 
-  const handleSave = (f: Feature) => {
+  const getIDMapping = (f: Feature): Nullable<Id> => {
+    return typeof f.id === "number" && idMap && idMap.has(f.id)
+      ? idMap.get(f.id)
+      : undefined;
+  };
+
+  const cloneFeaturesWithOriginalIDs = (
+    editing: number = -1,
+    editingFeature?: Feature
+  ) => {
+    return parsed.features.map((parsedFeature, i) => {
+      if (i === editing && editingFeature) {
+        return {
+          ...editingFeature,
+          id: getIDMapping(editingFeature),
+        };
+      }
+
+      return {
+        ...parsedFeature,
+        id: getIDMapping(parsedFeature),
+      };
+    });
+  };
+
+  const handleSave = (editingFeature: Feature) => {
     if (editing === undefined) {
       return;
     }
-    const newFeatures = [...parsed.features];
-    newFeatures[editing] = f;
-    const newCollection = { ...parsed, features: newFeatures };
+
+    if (isCollection(parsedGeoJson)) {
+      // If already a feature collection, we can just setCode using JSON lib.
+      const jsonPath = ["features", editing];
+      const formattingOptions = isLargeFile
+        ? undefined
+        : DEFAULT_FORMATTING_OPTIONS;
+
+      const edits = setProperty(
+        throttledCode,
+        jsonPath,
+        {
+          ...editingFeature,
+          id: getIDMapping(editingFeature),
+        },
+        formattingOptions
+      );
+
+      setCode(applyEdits(throttledCode, edits, true));
+    } else {
+      const newCollection = {
+        ...parsed,
+        features: cloneFeaturesWithOriginalIDs(editing, editingFeature),
+      };
+
+      setGeojson(newCollection);
+    }
+
     setEditing(undefined);
-    setGeojson(newCollection);
   };
 
   const handleCancel = () => {
     setEditing(undefined);
   };
 
+  const handleDelete = () => {
+    if (selection) {
+      if (isCollection(parsedGeoJson)) {
+        const edits = removeProperty(
+          throttledCode,
+          ["features", selection.id],
+          isLargeFile ? undefined : DEFAULT_FORMATTING_OPTIONS
+        );
+
+        setCode(applyEdits(throttledCode, edits));
+      } else {
+        setCode(DEFAULT_CODE);
+      }
+    }
+  };
+
   const handleNewFeature = useCallback(
-    (f) => setGeojson(addFeature(parsed, f)),
+    (f) => {
+      if (isCollection(parsedGeoJson)) {
+        // If already a feature collection, we can just setCode using JSON lib.
+        const edits = setProperty(
+          throttledCode,
+          ["features", parsed.features.length],
+          f,
+          isLargeFile ? undefined : DEFAULT_FORMATTING_OPTIONS
+        );
+
+        setCode(applyEdits(throttledCode, edits));
+      } else {
+        // If not, probably faster to use the 'parsed' variable.
+        const features = cloneFeaturesWithOriginalIDs();
+        features.push(f);
+
+        const newCollection = {
+          ...parsed,
+          features,
+        };
+
+        setGeojson(newCollection);
+      }
+    },
     [parsed]
   );
+
+  const featureInfoValue: any = useMemo(() => {
+    if (!selection) {
+      return null;
+    }
+
+    const value = {
+      ...parsed.features[selection.id],
+    };
+
+    // Needed for the JSON editor.
+    const idMapping = getIDMapping(parsed.features[selection.id]);
+    if (idMapping != null) {
+      value.id = idMapping;
+    } else {
+      delete value.id;
+    }
+
+    return value;
+  }, [selection]);
 
   return (
     <div className={cx("App", { "App--minimal": minimal })}>
@@ -185,12 +317,17 @@ const App: React.FC = () => {
           </div>
         </Mapbox>
         {!minimal && <Actions parsed={parsed} onGeojson={setCode} />}
-        {selection && <FeatureInfo feature={parsed.features[selection.id]} />}
+        {selection && <FeatureInfo feature={featureInfoValue} />}
         {!hiddenEditor && (
-          <JsonEditor onChange={setCode} value={code} codeStatus={codeStatus} />
+          <JsonEditor
+            onChange={setCode}
+            value={code}
+            codeStatus={codeStatus}
+            isLargeFile={isLargeFile}
+          />
         )}
       </div>
-      <StatusBar codeStatus={codeStatus} />
+      <StatusBar codeStatus={codeStatus} byteLength={byteLength} />
     </div>
   );
 };

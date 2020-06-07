@@ -11,16 +11,6 @@ export const fillLayerLight: Layer = {
   type: "fill",
   paint: { "fill-color": black100 },
 };
-export const lineLayer: Layer = {
-  id: "line",
-  type: "line",
-  paint: { "line-color": blue800, "line-width": 3 },
-};
-export const lineLayerLight: Layer = {
-  id: "line",
-  type: "line",
-  paint: { "line-color": black400, "line-width": 3 },
-};
 export const pointLayer: Layer = {
   id: "point",
   type: "symbol",

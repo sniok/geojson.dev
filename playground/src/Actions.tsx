@@ -1,4 +1,4 @@
-import * as React from "react";
+import React, { useCallback } from "react";
 import "./Actions.css";
 import { saveAs } from "file-saver";
 import geojsonhint from "@mapbox/geojsonhint";
@@ -11,7 +11,7 @@ export function Actions({
   parsed: any;
   onGeojson: (p: any) => void;
 }) {
-  const onOpen = () => {
+  const onOpen = useCallback(() => {
     const input = document.createElement("input");
     input.type = "file";
     input.click();
@@ -24,19 +24,15 @@ export function Actions({
         const file = input.files[0];
         const text = await (file as any).text();
         try {
-          const parsed = JSON.parse(text);
-          const errors = geojsonhint.hint(parsed);
-          if (errors.length) {
-            throw new Error("Invalid geojson");
-          }
+          JSON.parse(text);
           onGeojson(text);
         } catch (e) {
-          console.error("Failed", e);
+          console.error("Invalid JSON", e);
         }
       },
       false
     );
-  };
+  }, [onGeojson])
 
   const onSave = () => {
     const blob = new Blob([JSON.stringify(parsed, null, 2)], {
