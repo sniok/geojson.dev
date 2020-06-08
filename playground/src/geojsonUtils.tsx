@@ -30,7 +30,7 @@ export const toCollection = (geojson: GeoJSONObject): FeatureCollection => {
     return featureCollection([geojson]);
   }
   if (isGeometry(geojson)) {
-    return featureCollection([feature(geojson)]);
+    return featureCollection([feature(geojson, {}, { id: 0 })]);
   }
   throw new Error("Unknown type " + geojson.type);
 };
