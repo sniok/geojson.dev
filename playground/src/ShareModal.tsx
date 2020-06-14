@@ -2,34 +2,40 @@ import Button from "./Button";
 import * as React from "react";
 import "./ShareModal.css";
 
-export function ShareModal({ parsed }: { parsed: any }) {
+export function ShareModal({ code }: { code: string }) {
   const [hideEditor, setHideEditor] = React.useState(false);
   const [minimal, setMinimal] = React.useState(false);
   const [url, setUrl] = React.useState("");
   const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | undefined>(undefined);
 
   const share = async () => {
     setLoading(true);
-    const { name } = await fetch(
-      "https://63etfxlm03.execute-api.eu-west-1.amazonaws.com/dev/share",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(parsed),
+    try {
+      const { name } = await fetch(
+        "https://63etfxlm03.execute-api.eu-west-1.amazonaws.com/dev/share",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: code,
+        }
+      ).then((x) => x.json());
+      const params = new URLSearchParams();
+      params.set("share", name);
+      if (hideEditor) {
+        params.set("hideEditor", "1");
       }
-    ).then((x) => x.json());
-    const params = new URLSearchParams();
-    params.set("share", name);
-    if (hideEditor) {
-      params.set("hideEditor", "1");
+      if (minimal) {
+        params.set("minimal", "1");
+      }
+      setUrl(`http://playground.geojson.dev/?${params.toString()}`);
+      setLoading(false);
+    } catch (e) {
+      setError("upload failed :(");
+      setLoading(false);
     }
-    if (minimal) {
-      params.set("minimal", "1");
-    }
-    setUrl(`http://playground.geojson.dev/?${params.toString()}`);
-    setLoading(false);
   };
 
   return (
@@ -55,6 +61,7 @@ export function ShareModal({ parsed }: { parsed: any }) {
       </div>
       <Button onClick={share}>Share</Button>
       {loading && <div>Uploading...</div>}
+      {error !== undefined && <div>{error}</div>}
       {url.length > 0 && (
         <div className="ShareModal__url">
           <input type="text" value={url} />

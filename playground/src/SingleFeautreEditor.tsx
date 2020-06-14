@@ -21,7 +21,10 @@ interface Props {
   onSave: (f: Feature) => void;
   onCancel: () => void;
 }
-function Editor(props: Props) {
+/**
+ *  Edit feature on map using mapboxgl-draw
+ */
+function SingleFeautreEditor(props: Props) {
   const [feature, setFeature] = useState(props.feature);
   const map = useMap();
 
@@ -71,4 +74,4 @@ function Editor(props: Props) {
   );
 }
 
-export default Editor;
+export default SingleFeautreEditor;

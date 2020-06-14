@@ -1,5 +1,14 @@
 import { Layer } from "mapbox-gl";
-import { blue100, black100, blue800, black800, black400 } from "./colors";
+import {
+  blue100,
+  black100,
+  blue800,
+  black800,
+  black400,
+  blue400,
+  blue700,
+  black700,
+} from "./colors";
 
 export const fillLayer: Layer = {
   id: "fill-fill",
@@ -13,32 +22,22 @@ export const fillLayerLight: Layer = {
 };
 export const pointLayer: Layer = {
   id: "point",
-  type: "symbol",
-  layout: {
-    "icon-image": "circle-icon",
-    "icon-allow-overlap": true,
-    "icon-ignore-placement": true,
-  },
+  type: "circle",
   paint: {
-    "icon-opacity": 1,
-    "icon-opacity-transition": {
-      duration: 0,
-    },
+    "circle-radius": 4,
+    "circle-color": blue700,
+    "circle-stroke-color": blue400,
+    "circle-stroke-width": 3,
   },
 };
 export const pointLayerLight: Layer = {
   id: "point",
-  type: "symbol",
-  layout: {
-    "icon-image": "circle-icon-light",
-    "icon-allow-overlap": true,
-    "icon-ignore-placement": true,
-  },
+  type: "circle",
   paint: {
-    "icon-opacity": 1,
-    "icon-opacity-transition": {
-      duration: 0,
-    },
+    "circle-radius": 4,
+    "circle-color": black700,
+    "circle-stroke-color": black400,
+    "circle-stroke-width": 3,
   },
 };
 export const linesLayer: Layer = {

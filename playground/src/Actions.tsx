@@ -1,14 +1,13 @@
 import React, { useCallback } from "react";
 import "./Actions.css";
 import { saveAs } from "file-saver";
-import geojsonhint from "@mapbox/geojsonhint";
 import { ShareModal } from "./ShareModal";
 
 export function Actions({
-  parsed,
+  code,
   onGeojson,
 }: {
-  parsed: any;
+  code: string;
   onGeojson: (p: any) => void;
 }) {
   const onOpen = useCallback(() => {
@@ -32,10 +31,10 @@ export function Actions({
       },
       false
     );
-  }, [onGeojson])
+  }, [onGeojson]);
 
   const onSave = () => {
-    const blob = new Blob([JSON.stringify(parsed, null, 2)], {
+    const blob = new Blob([code], {
       type: "application/json;charset=utf-8",
     });
     saveAs(blob, "geometry.json");
@@ -57,7 +56,7 @@ export function Actions({
       >
         Share
       </button>
-      {shareModal && <ShareModal parsed={parsed} />}
+      {shareModal && <ShareModal code={code} />}
     </div>
   );
 }

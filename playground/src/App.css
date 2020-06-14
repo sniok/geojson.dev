@@ -14,6 +14,16 @@ body {
   width: 310px;
 }
 
+.App__loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999999;
+  background: #fff;
+}
+
 .workspace {
   display: flex;
   height: calc(100vh - 20px);
@@ -121,6 +131,10 @@ AppControl > *:not(:last-child),
   #editor {
     background: #1f2024;
   }
+  .App__loading {
+    background: #111;
+  }
+
   .EditorToggle {
     color: #fff;
     background: #000;

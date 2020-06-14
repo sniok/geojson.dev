@@ -17,11 +17,11 @@ import cx from "classnames";
 import StatusBar from "./StatusBar";
 // @ts-ignore
 import useThrottle from "./useThrottle";
-import Drawer from "./Drawer";
+import NewFeatureDrawer from "./NewFeatureDrawer";
 import MapPopup from "./MapPopup";
-import { featureCollection, Feature, bbox, AllGeoJSON, Id } from "@turf/turf";
+import { featureCollection, Feature, bbox, Id } from "@turf/turf";
 import { useParsedGeojson } from "./useParsedGeojson";
-import Editor from "./Editor";
+import SingleFeautreEditor from "./SingleFeautreEditor";
 import Button from "./Button";
 import { FeatureInfo } from "./FeatureInfo";
 import { Actions } from "./Actions";
@@ -48,22 +48,63 @@ const App: React.FC = () => {
 
   const [minimal, setMinimal] = useState(false);
   const [hiddenEditor, setHiddenEditor] = useState(false);
+  const [loaded, setLoaded] = useState(false);
 
   const [selection, setSelection] = useState<ClickEvent | undefined>();
   const [editing, setEditing] = useState<number | undefined>();
 
+  // Geojson in text format
   const [code, setCode] = useState(DEFAULT_CODE);
-
   const throttledCode = useThrottle(code, 100);
-  const { byteLength, isLargeFile } = useStringByteLength(throttledCode);
-  const { parsed: parsedGeoJson, codeStatus, idMap } = useParsedGeojson(
-    throttledCode
-  );
 
-  const parsed = toCollection(parsedGeoJson);
+  const { byteLength, isLargeFile } = useStringByteLength(throttledCode);
+
+  // ParsedGeoJson represents what's in editor but in parsed form
+  const { parsedGeoJson, codeStatus, idMap } = useParsedGeojson(throttledCode);
+
+  // Collection is slightly modified version of parsedGeoJson to make it easy to work with geojson
+  const parsedAsCollection = useMemo(() => toCollection(parsedGeoJson), [
+    parsedGeoJson,
+  ]);
 
   const setGeojson = (geojson: JSONLikeObject) => {
     setCode(JSON.stringify(geojson, null, 2));
+  };
+
+  // Centering map on content
+  const shouldCenterOnNextFrame = useRef(false);
+  const centerOnData = () => (shouldCenterOnNextFrame.current = true);
+  useEffect(() => {
+    const panToData = () => {
+      // Already centered. bail
+      if (!shouldCenterOnNextFrame.current) {
+        return;
+      }
+      // Map is still loading, spin until loaded
+      if (!mapRef.current) {
+        setTimeout(panToData, 50);
+        return;
+      }
+      shouldCenterOnNextFrame.current = false;
+      mapRef.current.fitBounds(bbox(parsedGeoJson as any) as any, {
+        padding: 50,
+        animate: false,
+      });
+    };
+
+    if (shouldCenterOnNextFrame.current) {
+      panToData();
+    }
+  }, [parsedGeoJson]);
+
+  const setFromFileContent = (code: string) => {
+    centerOnData();
+    setCode(code);
+  };
+
+  const formatCode = () => {
+    const formatted = JSON.stringify(parsedGeoJson, null, 2);
+    setCode(formatted);
   };
 
   const fetchGeojson = async (url: string) => {
@@ -75,17 +116,6 @@ const App: React.FC = () => {
     } catch (e) {
       console.error("Invalid JSON", e);
     }
-  };
-
-  const centerOnData = (geojson: AllGeoJSON) => {
-    if (!mapRef.current) {
-      setTimeout(() => centerOnData(geojson), 50);
-      return;
-    }
-    mapRef.current.fitBounds(bbox(geojson) as any, {
-      padding: 50,
-      animate: false,
-    });
   };
 
   useEffect(() => {
@@ -113,7 +143,7 @@ const App: React.FC = () => {
     if (json) {
       try {
         const geojson = JSON.parse(decodeURIComponent(json));
-        centerOnData(geojson);
+        centerOnData();
         setGeojson(geojson);
       } catch (e) {
         console.error(e);
@@ -130,18 +160,18 @@ const App: React.FC = () => {
     if (hideEditor) {
       setHiddenEditor(true);
     }
+
+    setImmediate(() => setLoaded(true));
   }, []);
 
-  const onFeatureClick = useCallback(
+  const selectFeature = useCallback(
     (e: ClickEvent) => {
       setSelection(e);
     },
     [setSelection]
   );
 
-  const handleEdit = (id: number) => {
-    setEditing(id);
-  };
+  const startEditingFeature = (id: number) => setEditing(id);
 
   const getIDMapping = (f: Feature): Nullable<Id> => {
     return typeof f.id === "number" && idMap && idMap.has(f.id)
@@ -153,7 +183,7 @@ const App: React.FC = () => {
     editing: number = -1,
     editingFeature?: Feature
   ) => {
-    return parsed.features.map((parsedFeature, i) => {
+    return parsedAsCollection.features.map((parsedFeature, i) => {
       if (i === editing && editingFeature) {
         return {
           ...editingFeature,
@@ -168,7 +198,7 @@ const App: React.FC = () => {
     });
   };
 
-  const handleSave = (editingFeature: Feature) => {
+  const modifyExistingFeature = (editingFeature: Feature) => {
     if (editing === undefined) {
       return;
     }
@@ -192,22 +222,16 @@ const App: React.FC = () => {
 
       setCode(applyEdits(throttledCode, edits, true));
     } else {
-      const newCollection = {
-        ...parsed,
-        features: cloneFeaturesWithOriginalIDs(editing, editingFeature),
-      };
-
-      setGeojson(newCollection);
+      // If it's a feature or geometry save as it is
+      setGeojson({ ...editingFeature, id: getIDMapping(editingFeature) });
     }
 
     setEditing(undefined);
   };
 
-  const handleCancel = () => {
-    setEditing(undefined);
-  };
+  const cancelEditing = () => setEditing(undefined);
 
-  const handleDelete = () => {
+  const deleteExistingFeature = () => {
     if (selection) {
       if (isCollection(parsedGeoJson)) {
         const edits = removeProperty(
@@ -223,13 +247,13 @@ const App: React.FC = () => {
     }
   };
 
-  const handleNewFeature = useCallback(
+  const saveNewFeature = useCallback(
     (f) => {
       if (isCollection(parsedGeoJson)) {
         // If already a feature collection, we can just setCode using JSON lib.
         const edits = setProperty(
           throttledCode,
-          ["features", parsed.features.length],
+          ["features", parsedAsCollection.features.length],
           f,
           isLargeFile ? undefined : DEFAULT_FORMATTING_OPTIONS
         );
@@ -241,14 +265,14 @@ const App: React.FC = () => {
         features.push(f);
 
         const newCollection = {
-          ...parsed,
+          ...parsedAsCollection,
           features,
         };
 
         setGeojson(newCollection);
       }
     },
-    [parsed]
+    [parsedAsCollection]
   );
 
   const featureInfoValue: any = useMemo(() => {
@@ -257,11 +281,11 @@ const App: React.FC = () => {
     }
 
     const value = {
-      ...parsed.features[selection.id],
+      ...parsedAsCollection.features[selection.id],
     };
 
     // Needed for the JSON editor.
-    const idMapping = getIDMapping(parsed.features[selection.id]);
+    const idMapping = getIDMapping(parsedAsCollection.features[selection.id]);
     if (idMapping != null) {
       value.id = idMapping;
     } else {
@@ -273,14 +297,15 @@ const App: React.FC = () => {
 
   return (
     <div className={cx("App", { "App--minimal": minimal })}>
-      <DragAndDrop onFileContent={setCode} />
+      {!loaded && <div className="App__loading" />}
+      <DragAndDrop onFileContent={setFromFileContent} />
       <div className={"workspace"}>
         <Mapbox mapRef={mapRef}>
           {!minimal && editing !== undefined && (
-            <Editor
-              feature={parsed.features[editing]}
-              onCancel={handleCancel}
-              onSave={handleSave}
+            <SingleFeautreEditor
+              feature={parsedAsCollection.features[editing]}
+              onCancel={cancelEditing}
+              onSave={modifyExistingFeature}
             />
           )}
           {editing === undefined && selection && !hiddenEditor && (
@@ -292,19 +317,26 @@ const App: React.FC = () => {
               <div className="MapPopup__content">
                 <Button
                   icon={<Edit size={15} />}
-                  onClick={() => handleEdit(selection.id)}
+                  onClick={() => startEditingFeature(selection.id)}
                 >
                   Edit
                 </Button>
-                <Button icon={<Trash size={15} />} onClick={handleDelete}>
+                <Button
+                  icon={<Trash size={15} />}
+                  onClick={deleteExistingFeature}
+                >
                   Remove
                 </Button>
               </div>
             </MapPopup>
           )}
-          <Geojson data={parsed} onClick={onFeatureClick} hideIds={editing} />
+          <Geojson
+            data={parsedAsCollection}
+            onClick={selectFeature}
+            hideIds={editing}
+          />
           {!minimal && editing === undefined && (
-            <Drawer onNewFeature={handleNewFeature} />
+            <NewFeatureDrawer onNewFeature={saveNewFeature} />
           )}
           <div
             className="EditorToggle"
@@ -316,7 +348,7 @@ const App: React.FC = () => {
             {hiddenEditor ? <ChevronLeft /> : <ChevronRight />}
           </div>
         </Mapbox>
-        {!minimal && <Actions parsed={parsed} onGeojson={setCode} />}
+        {!minimal && <Actions code={throttledCode} onGeojson={setCode} />}
         {selection && <FeatureInfo feature={featureInfoValue} />}
         {!hiddenEditor && (
           <JsonEditor
@@ -325,6 +357,20 @@ const App: React.FC = () => {
             codeStatus={codeStatus}
             isLargeFile={isLargeFile}
           />
+        )}
+        {!minimal && (
+          <Button
+            onClick={formatCode}
+            style={{
+              position: "absolute",
+              zIndex: 1,
+              right: 0,
+              bottom: 0,
+              margin: "15px 20px",
+            }}
+          >
+            prettify
+          </Button>
         )}
       </div>
       <StatusBar codeStatus={codeStatus} byteLength={byteLength} />

@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from "react";
 
 import { monaco as MonacoLoader, ControlledEditor } from "@monaco-editor/react";
-import * as Monaco from 'monaco-editor/esm/vs/editor/editor.api';
+import * as Monaco from "monaco-editor/esm/vs/editor/editor.api";
 
 import usePreferDarkMode from "use-prefer-dark-mode";
 import { CodeStatus } from "./useParsedGeojson";
@@ -31,7 +31,7 @@ configureMonaco(MonacoLoader, "vs")
     // Validate schemas.
     // http://json.schemastore.org/geojson
     monacoObj.languages.json.jsonDefaults.setDiagnosticsOptions({
-      validate: false,
+      validate: true,
       allowComments: false,
       schemas: [
         {
@@ -51,9 +51,14 @@ interface Props {
 }
 
 // Owner for VSCode markers.
-const OWNER = "geojsonError"
+const OWNER = "geojsonError";
 
-export function JsonEditor({ onChange, codeStatus, value, isLargeFile }: Props) {
+export function JsonEditor({
+  onChange,
+  codeStatus,
+  value,
+  isLargeFile,
+}: Props) {
   const [diagnostics, setDiagnostics] = useState<Diagnostic[]>([]);
   const editorRef = useRef<Monaco.editor.ICodeEditor>();
   const dark = usePreferDarkMode();
@@ -81,7 +86,7 @@ export function JsonEditor({ onChange, codeStatus, value, isLargeFile }: Props) 
           endLineNumber: range.endLineNumber,
           endColumn: range.endColumn,
           message: e.message,
-          source: "GeoJSON Error"
+          source: "GeoJSON Error",
         } as Diagnostic;
       });
 

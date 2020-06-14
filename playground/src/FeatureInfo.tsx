@@ -19,7 +19,7 @@ export function FeatureInfo({ feature }: { feature: Feature }) {
           base01: "rgb(245, 245, 245)",
           base02: "rgb(235, 235, 235)",
           base03: "#93a1a1",
-          base04: "rgba(0, 0, 0, 0.3)",
+          base04: "rgb(133, 153, 0)",
           base05: "red",
           base06: "#073642",
           base07: "#9cdcfe",

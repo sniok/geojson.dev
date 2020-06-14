@@ -1,9 +1,8 @@
-import React, { ReactNode } from "react";
+import React, { ReactNode, ButtonHTMLAttributes } from "react";
 
-interface Props {
+interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon?: ReactNode;
   children: ReactNode;
-  onClick: any;
 }
 function Button({ icon, children, ...rest }: Props) {
   return (

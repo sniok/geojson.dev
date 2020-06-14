@@ -38,16 +38,17 @@ export function DragAndDrop({
       setIsDragging(false);
       event.stopPropagation();
       event.preventDefault();
+
       if (event.dataTransfer === null) {
         return;
       }
+
       if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
         const file = event.dataTransfer.files[0];
-        if (file.type === "application/json") {
-          (file as any).text().then((content: any) => {
-            onFileContent(content);
-          });
-        }
+
+        (file as any).text().then((content: any) => {
+          onFileContent(content);
+        });
 
         event.dataTransfer.clearData();
       }

@@ -66,19 +66,12 @@ const MapLayer = React.memo(
         ...layer,
         source: sourceId,
       });
-      // map.addLayer({
-      //   ...layer,
-      //   id: layer.id + "-tiles",
-      //   source: "tiles",
-      //   "source-layer": "geojsonLayer",
-      // });
 
       const hoverOn = () => (map.getCanvas().style.cursor = "pointer");
       const hoverOff = () => (map.getCanvas().style.cursor = "");
 
       if (onClick) {
         map.on("click", layer.id, onClick);
-        // map.on("click", layer.id + "-tiles", onClick);
         map.on("mouseenter", layer.id, hoverOn);
         map.on("mouseleave", layer.id, hoverOff);
       }

@@ -18,7 +18,10 @@ function checkWinding(geojson: AllGeoJSON) {
 interface Props {
   onNewFeature: (f: any) => void;
 }
-function Drawer(props: Props) {
+/**
+ * Create new features on map using mapboxgl-draw
+ */
+function NewFeatureDrawer(props: Props) {
   const map = useMap();
 
   const [draw, setDraw] = useState<any>(undefined);
@@ -68,4 +71,4 @@ function Drawer(props: Props) {
   return null;
 }
 
-export default Drawer;
+export default NewFeatureDrawer;
