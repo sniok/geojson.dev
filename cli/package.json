@@ -13,7 +13,7 @@
     "express": "^4.17.1",
     "geojson-vt": "^3.2.1",
     "get-port": "^5.0.0",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.7",
     "vt-pbf": "^3.1.1"
   }
 }
